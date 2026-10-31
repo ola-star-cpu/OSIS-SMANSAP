@@ -72,10 +72,10 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Environment Firebase Config & App ID Fallback
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'osis-sman1-parlilitan';
+        // Dynamic Safe Fallback App ID for Firestore Public Syncing
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'osis-sman1-parlilitan-v1';
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
             : {
@@ -91,10 +91,10 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Firestore Public Doc Reference following mandatory path rules
+        // Public Data Document Reference Path (Strict Cloud Path Rule)
         const osisDataDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'systemState', 'main');
 
-        // Authenticate & Listen for Real-time Database Updates across ALL Users
+        // Authenticate & Listen for Real-time Database Updates across ALL Devices
         async function initCloudSync() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -103,39 +103,42 @@
                     await signInAnonymously(auth);
                 }
             } catch (err) {
-                console.warn("Cloud Auth fallback active:", err);
+                console.warn("Cloud Auth Active:", err);
             }
 
-            // Real-time listener: triggers whenever ANY admin makes changes
+            // Real-time listener: triggers whenever ANY admin updates data on ANY device
             onSnapshot(osisDataDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     if (data.customLogoBase64 !== undefined) window.customLogoBase64 = data.customLogoBase64;
-                    if (data.newsData) window.newsData = data.newsData;
-                    if (data.pembinaData) window.pembinaData = data.pembinaData;
-                    if (data.divisionsData) window.divisionsData = data.divisionsData;
-                    if (data.membersData) window.membersData = data.membersData;
+                    if (data.newsData && data.newsData.length > 0) window.newsData = data.newsData;
+                    if (data.pembinaData && data.pembinaData.name) window.pembinaData = data.pembinaData;
+                    if (data.divisionsData && data.divisionsData.length > 0) window.divisionsData = data.divisionsData;
+                    if (data.membersData && data.membersData.length > 0) window.membersData = data.membersData;
                     if (data.complaintsData) window.complaintsData = data.complaintsData;
-                    if (data.adminUsersData) window.adminUsersData = data.adminUsersData;
+                    if (data.adminUsersData && data.adminUsersData.length > 0) window.adminUsersData = data.adminUsersData;
 
-                    // Trigger UI Updates automatically across all open browser windows
+                    // Trigger UI Updates automatically across all open visitor browsers
                     if (typeof window.syncAllCloudUI === 'function') {
                         window.syncAllCloudUI();
                     }
                 } else {
-                    // Seed initial data to cloud if document doesn't exist yet
-                    if (typeof window.saveAllStateToStorage === 'function') {
-                        window.saveAllStateToStorage();
+                    // Push current local default data to initialize Cloud Document
+                    if (typeof window.saveStateToCloud === 'function') {
+                        window.saveStateToCloud();
                     }
                 }
             }, (error) => {
-                console.error("Cloud listener error:", error);
+                console.error("Cloud listener status:", error);
             });
         }
 
-        // Global function to sync state directly to Cloud Database
+        // Global function to push updated state directly to Cloud Database
         window.saveStateToCloud = async function() {
             try {
+                if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
                 await setDoc(osisDataDocRef, {
                     customLogoBase64: window.customLogoBase64 || "",
                     newsData: window.newsData || [],
@@ -147,7 +150,7 @@
                     lastUpdated: new Date().toISOString()
                 }, { merge: true });
             } catch (e) {
-                console.error("Error saving to cloud database:", e);
+                console.error("Error pushing state to cloud database:", e);
             }
         };
 
@@ -1248,6 +1251,70 @@
         let complaintsData = window.complaintsData;
         let adminUsersData = window.adminUsersData;
 
+        let ratingCommentsData = [];
+        let currentSelectedRatingStars = 5;
+        let isAdminLoggedIn = false;
+        let tempMemberBase64 = "";
+        let tempNewsBase64 = "";
+
+        // AUTH & ADMIN PANEL CONTROLLERS (GLOBAL DEFINITION)
+        window.toggleAdminPanel = function() {
+            if (isAdminLoggedIn) {
+                switchTab('admin');
+            } else {
+                openAdminLoginModal();
+            }
+        };
+
+        window.openAdminLoginModal = function() {
+            const modal = document.getElementById('modal-admin-login');
+            if (modal) modal.classList.remove('hidden');
+        };
+
+        window.closeAdminLoginModal = function() {
+            const modal = document.getElementById('modal-admin-login');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        window.handleAdminLogin = function(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-username').value;
+            const p = document.getElementById('login-password').value;
+
+            const userFound = adminUsersData.find(x => x.username.toLowerCase() === u.toLowerCase() && x.pass === p);
+
+            if (userFound) {
+                isAdminLoggedIn = true;
+                closeAdminLoginModal();
+                showToast("Login Berhasil", `Selamat datang, ${userFound.fullname}!`);
+                const authBtn = document.getElementById('auth-btn-main');
+                if (authBtn) {
+                    authBtn.innerHTML = `<div class="w-7 h-7 rounded-xl bg-gold-500 text-navy-900 flex items-center justify-center font-black transition shadow-md"><i data-lucide="layout-dashboard" class="w-4 h-4"></i></div><span class="hidden sm:inline font-semibold">Dashboard Admin</span><span class="sm:hidden font-semibold">Admin</span>`;
+                }
+                switchTab('admin');
+                renderComplaintsTable();
+                renderMembersAdminTable();
+                renderUsersAdminTable();
+                renderDivisionsAdminTable();
+                renderNewsAdminTable();
+                if (window.lucide && typeof lucide.createIcons === 'function') {
+                    lucide.createIcons();
+                }
+            } else {
+                showToast("Login Gagal", "Username atau Password pengurus tidak terdaftar!", "error");
+            }
+        };
+
+        window.logoutAdmin = function() {
+            isAdminLoggedIn = false;
+            const authBtn = document.getElementById('auth-btn-main');
+            if (authBtn) {
+                authBtn.innerHTML = `<div class="w-7 h-7 rounded-xl bg-gold-500 text-navy-900 flex items-center justify-center font-black transition shadow-md"><i data-lucide="lock" class="w-4 h-4"></i></div><span class="hidden sm:inline font-semibold">Login Pengurus OSIS</span><span class="sm:hidden font-semibold">Pengurus</span>`;
+            }
+            switchTab('home');
+            showToast("Logout", "Anda telah keluar dari Portal Admin Pengurus.");
+        };
+
         // HELPER TO SAVE ALL STATE PERMANENTLY (LOCAL & REALTIME CLOUD)
         function syncStateLocalAndCloud() {
             window.customLogoBase64 = customLogoBase64;
@@ -1301,70 +1368,6 @@
                 renderNewsAdminTable();
             }
         };
-
-        let ratingCommentsData = [];
-        let currentSelectedRatingStars = 5;
-        let isAdminLoggedIn = false;
-        let tempMemberBase64 = "";
-        let tempNewsBase64 = "";
-
-        // AUTH & ADMIN PANEL CONTROLLERS
-        function toggleAdminPanel() {
-            if (isAdminLoggedIn) {
-                switchTab('admin');
-            } else {
-                openAdminLoginModal();
-            }
-        }
-
-        function openAdminLoginModal() {
-            const modal = document.getElementById('modal-admin-login');
-            if (modal) modal.classList.remove('hidden');
-        }
-
-        function closeAdminLoginModal() {
-            const modal = document.getElementById('modal-admin-login');
-            if (modal) modal.classList.add('hidden');
-        }
-
-        function handleAdminLogin(e) {
-            e.preventDefault();
-            const u = document.getElementById('login-username').value;
-            const p = document.getElementById('login-password').value;
-
-            const userFound = adminUsersData.find(x => x.username.toLowerCase() === u.toLowerCase() && x.pass === p);
-
-            if (userFound) {
-                isAdminLoggedIn = true;
-                closeAdminLoginModal();
-                showToast("Login Berhasil", `Selamat datang, ${userFound.fullname}!`);
-                const authBtn = document.getElementById('auth-btn-main');
-                if (authBtn) {
-                    authBtn.innerHTML = `<div class="w-7 h-7 rounded-xl bg-gold-500 text-navy-900 flex items-center justify-center font-black transition shadow-md"><i data-lucide="layout-dashboard" class="w-4 h-4"></i></div><span class="hidden sm:inline font-semibold">Dashboard Admin</span><span class="sm:hidden font-semibold">Admin</span>`;
-                }
-                switchTab('admin');
-                renderComplaintsTable();
-                renderMembersAdminTable();
-                renderUsersAdminTable();
-                renderDivisionsAdminTable();
-                renderNewsAdminTable();
-                if (window.lucide && typeof lucide.createIcons === 'function') {
-                    lucide.createIcons();
-                }
-            } else {
-                showToast("Login Gagal", "Username atau Password pengurus tidak terdaftar!", "error");
-            }
-        }
-
-        function logoutAdmin() {
-            isAdminLoggedIn = false;
-            const authBtn = document.getElementById('auth-btn-main');
-            if (authBtn) {
-                authBtn.innerHTML = `<div class="w-7 h-7 rounded-xl bg-gold-500 text-navy-900 flex items-center justify-center font-black transition shadow-md"><i data-lucide="lock" class="w-4 h-4"></i></div><span class="hidden sm:inline font-semibold">Login Pengurus OSIS</span><span class="sm:hidden font-semibold">Pengurus</span>`;
-            }
-            switchTab('home');
-            showToast("Logout", "Anda telah keluar dari Portal Admin Pengurus.");
-        }
 
         // PEMBINA & DIVISIONS DISPLAY HELPERS
         function updatePembinaDisplay() {
@@ -2539,4 +2542,4 @@
         }
     </script>
 </body>
-  </html>
+                            </html>
