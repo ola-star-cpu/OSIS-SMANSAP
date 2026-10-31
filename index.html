@@ -1,0 +1,2542 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSIS SMAN 1 Parlilitan - Digital Organization System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Global State Definition & Core State Handlers -->
+    <script>
+        // DEFAULT INITIAL DATA SEEDS
+        const DEFAULT_LOGO = "";
+        const DEFAULT_PEMBINA = {
+            name: "Dra. N. Situmorang, M.Pd",
+            nip: "NIP. 19780412 200501 2 004"
+        };
+        const DEFAULT_DIVISIONS = [
+            { id: 1, name: "BPH", desc: "Badan Pengurus Harian Inti OSIS" },
+            { id: 2, name: "Sekbid 1 (Keagamaan)", desc: "Pembinaan Keimanan dan Ketakwaan" },
+            { id: 3, name: "Sekbid 2 (Humas & Publikasi)", desc: "Hubungan Masyarakat dan Media Informasi" },
+            { id: 4, name: "Sekbid 3 (Olahraga & Kesehatan)", desc: "Pengembangan Olahraga dan Kesehatan Siswa" },
+            { id: 5, name: "Sekbid 4 (Seni & Kreativitas)", desc: "Pengembangan Seni, Budaya dan Inovasi" }
+        ];
+        const DEFAULT_MEMBERS = [
+            { id: 1, name: "Gabriel Tumanggor", jabatan: "Ketua OSIS", kelas: "XII MIPA 1", divisi: "BPH", desc: "Bertanggung jawab memimpin seluruh jalannya kegiatan OSIS SMAN 1 Parlilitan.", ratingSum: 24, ratingCount: 5, photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80" },
+            { id: 2, name: "Grace Maharani Hasugian", jabatan: "Wakil Ketua", kelas: "XII MIPA 2", divisi: "BPH", desc: "Membantu Ketua OSIS dan mengoordinasikan seluruh bidang sekbid.", ratingSum: 23, ratingCount: 5, photo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80" },
+            { id: 3, name: "Daniel Sihotang", jabatan: "Sekretaris", kelas: "XI MIPA 1", divisi: "BPH", desc: "Mengelola administrasi, surat-menyurat, dan arsip dokumen organisasi.", ratingSum: 24, ratingCount: 5, photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80" },
+            { id: 4, name: "Ruth Marbun", jabatan: "Bendahara", kelas: "XI IPS 1", divisi: "BPH", desc: "Bertanggung jawab atas pengelolaan dan transparansi keuangan OSIS.", ratingSum: 22, ratingCount: 5, photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80" }
+        ];
+        const DEFAULT_NEWS = [
+            { id: 1, title: "Latihan Dasar Kepemimpinan Siswa (LDKS) 2026", category: "Kepemimpinan", date: "12 Februari 2026", desc: "Membentuk jiwa kepemimpinan berkarakter dan disiplin bagi seluruh pengurus OSIS SMAN 1 Parlilitan.", photo: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=600&q=80" },
+            { id: 2, title: "Peringatan Hari Guru & Pentas Seni Budaya", category: "Seni & Budaya", date: "25 November 2025", desc: "Ajang apresiasi kreativitas dan pertunjukan bakat seni siswa SMAN 1 Parlilitan.", photo: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80" }
+        ];
+        const DEFAULT_COMPLAINTS = [
+            { id: "PGD-1001", date: "2026-02-10 09:30", title: "Fasilitas Kebersihan Kamar Mandi Belakang", category: "Fasilitas Sekolah", pelapor: "Anonim (Rahasia)", message: "Mohon diperhatikan kebersihan air dan tempat sampah di toilet gedung timur.", status: "Sedang Diproses", notes: "Sudah ditindaklanjuti ke tim sarpras." }
+        ];
+        const DEFAULT_USERS = [
+            { id: 1, username: "admin", fullname: "Super Admin OSIS", pass: "123456" }
+        ];
+
+        // Global States Initialization
+        window.customLogoBase64 = localStorage.getItem('osis_custom_logo') || DEFAULT_LOGO;
+        window.newsData = JSON.parse(localStorage.getItem('osis_news_data')) || DEFAULT_NEWS;
+        window.pembinaData = JSON.parse(localStorage.getItem('osis_pembina_data')) || DEFAULT_PEMBINA;
+        window.divisionsData = JSON.parse(localStorage.getItem('osis_divisions_data')) || DEFAULT_DIVISIONS;
+        window.membersData = JSON.parse(localStorage.getItem('osis_members_data')) || DEFAULT_MEMBERS;
+        window.complaintsData = JSON.parse(localStorage.getItem('osis_complaints_data')) || DEFAULT_COMPLAINTS;
+        window.adminUsersData = JSON.parse(localStorage.getItem('osis_admin_users')) || DEFAULT_USERS;
+
+        // Global saveAllStateToStorage Defined BEFORE Firebase Module Loads
+        window.saveAllStateToStorage = function() {
+            localStorage.setItem('osis_custom_logo', window.customLogoBase64 || "");
+            localStorage.setItem('osis_news_data', JSON.stringify(window.newsData || []));
+            localStorage.setItem('osis_pembina_data', JSON.stringify(window.pembinaData || {}));
+            localStorage.setItem('osis_divisions_data', JSON.stringify(window.divisionsData || []));
+            localStorage.setItem('osis_members_data', JSON.stringify(window.membersData || []));
+            localStorage.setItem('osis_complaints_data', JSON.stringify(window.complaintsData || []));
+            localStorage.setItem('osis_admin_users', JSON.stringify(window.adminUsersData || []));
+
+            if (typeof window.saveStateToCloud === 'function') {
+                window.saveStateToCloud();
+            }
+        };
+    </script>
+
+    <!-- Firebase SDK Integration for Real-time Cloud Sync -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Environment Firebase Config & App ID Fallback
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'osis-sman1-parlilitan';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "AIzaSyDemoConfigKeyForOSISSman1Parlilitan",
+                authDomain: "osis-sman1-parlilitan.firebaseapp.com",
+                projectId: "osis-sman1-parlilitan",
+                storageBucket: "osis-sman1-parlilitan.appspot.com",
+                messagingSenderId: "1234567890",
+                appId: "1:1234567890:web:osisdemo"
+            };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Firestore Public Doc Reference following mandatory path rules
+        const osisDataDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'systemState', 'main');
+
+        // Authenticate & Listen for Real-time Database Updates across ALL Users
+        async function initCloudSync() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.warn("Cloud Auth fallback active:", err);
+            }
+
+            // Real-time listener: triggers whenever ANY admin makes changes
+            onSnapshot(osisDataDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.customLogoBase64 !== undefined) window.customLogoBase64 = data.customLogoBase64;
+                    if (data.newsData) window.newsData = data.newsData;
+                    if (data.pembinaData) window.pembinaData = data.pembinaData;
+                    if (data.divisionsData) window.divisionsData = data.divisionsData;
+                    if (data.membersData) window.membersData = data.membersData;
+                    if (data.complaintsData) window.complaintsData = data.complaintsData;
+                    if (data.adminUsersData) window.adminUsersData = data.adminUsersData;
+
+                    // Trigger UI Updates automatically across all open browser windows
+                    if (typeof window.syncAllCloudUI === 'function') {
+                        window.syncAllCloudUI();
+                    }
+                } else {
+                    // Seed initial data to cloud if document doesn't exist yet
+                    if (typeof window.saveAllStateToStorage === 'function') {
+                        window.saveAllStateToStorage();
+                    }
+                }
+            }, (error) => {
+                console.error("Cloud listener error:", error);
+            });
+        }
+
+        // Global function to sync state directly to Cloud Database
+        window.saveStateToCloud = async function() {
+            try {
+                await setDoc(osisDataDocRef, {
+                    customLogoBase64: window.customLogoBase64 || "",
+                    newsData: window.newsData || [],
+                    pembinaData: window.pembinaData || {},
+                    divisionsData: window.divisionsData || [],
+                    membersData: window.membersData || [],
+                    complaintsData: window.complaintsData || [],
+                    adminUsersData: window.adminUsersData || [],
+                    lastUpdated: new Date().toISOString()
+                }, { merge: true });
+            } catch (e) {
+                console.error("Error saving to cloud database:", e);
+            }
+        };
+
+        initCloudSync();
+    </script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            800: '#0f2942',
+                            900: '#0a192f',
+                            950: '#030c1b',
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .navy-gradient { background: linear-gradient(135deg, #0a192f 0%, #1e3a8a 100%); }
+        .gold-gradient { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full"></div>
+
+    <!-- MAIN NAVBAR -->
+    <nav class="sticky top-0 z-40 bg-navy-900 text-white shadow-lg border-b border-navy-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo OSIS SMAN 1 Parlilitan Custom SVG & Brand -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('home')">
+                    <div class="w-12 h-12 rounded-full bg-navy-950 border-2 border-gold-400 p-1 flex items-center justify-center shadow-md shrink-0 overflow-hidden">
+                        <!-- Custom Authentic OSIS Logo SVG / Image Dynamic -->
+                        <img id="logo-main-nav" src="https://placehold.co/100x100/0a192f/f59e0b?text=OSIS" class="w-full h-full object-cover hidden" onerror="this.classList.add('hidden'); document.getElementById('svg-logo-nav').classList.remove('hidden');">
+                        <svg id="svg-logo-nav" viewBox="0 0 100 100" class="w-full h-full">
+                            <polygon points="50,5 92,25 92,75 50,95 8,75 8,25" fill="#f59e0b" stroke="#ffffff" stroke-width="2"/>
+                            <circle cx="50" cy="50" r="32" fill="#0a192f" stroke="#fbbf24" stroke-width="2"/>
+                            <path d="M50 24 L56 38 L72 40 L60 51 L63 66 L50 58 L37 66 L40 51 L28 40 L44 38 Z" fill="#fbbf24"/>
+                            <rect x="44" y="65" width="12" height="15" fill="#ffffff"/>
+                            <circle cx="50" cy="48" r="8" fill="#e11d48"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="font-extrabold text-lg sm:text-xl tracking-tight text-white flex items-center gap-1.5">
+                            OSIS SMAN 1 PARLILITAN
+                            <span class="text-xs bg-gold-500 text-navy-900 px-2 py-0.5 rounded-full font-bold">OFFICIAL</span>
+                        </div>
+                        <div class="text-xs text-slate-300 font-medium">Digital Organization System</div>
+                    </div>
+                </div>
+
+                <!-- Desktop Nav Navigation -->
+                <div class="hidden md:flex items-center space-x-1 lg:space-x-2">
+                    <button onclick="switchTab('home')" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-navy-800 transition flex items-center gap-1.5" id="nav-home">
+                        <i data-lucide="home" class="w-4 h-4 text-gold-400"></i> Beranda
+                    </button>
+                    <button onclick="switchTab('profile')" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-navy-800 transition flex items-center gap-1.5" id="nav-profile">
+                        <i data-lucide="award" class="w-4 h-4 text-gold-400"></i> Profil OSIS
+                    </button>
+                    <button onclick="switchTab('members')" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-navy-800 transition flex items-center gap-1.5" id="nav-members">
+                        <i data-lucide="users" class="w-4 h-4 text-gold-400"></i> Anggota
+                    </button>
+                    <button onclick="switchTab('rating')" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-navy-800 transition flex items-center gap-1.5" id="nav-rating">
+                        <i data-lucide="star" class="w-4 h-4 text-gold-400"></i> Rating Kinerja
+                    </button>
+                    <button onclick="switchTab('aspirasi')" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-navy-800 transition flex items-center gap-1.5" id="nav-aspirasi">
+                        <i data-lucide="message-square" class="w-4 h-4 text-gold-400"></i> Aspirasi
+                    </button>
+                </div>
+
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center gap-2">
+                    <button onclick="toggleMobileMenu()" class="text-white hover:text-gold-400 p-2 focus:outline-none">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-navy-950 border-t border-navy-800 px-4 pt-3 pb-6 space-y-2">
+            <button onclick="switchTab('home')" class="w-full text-left px-3 py-2.5 rounded-lg text-base font-medium text-slate-200 hover:bg-navy-800 flex items-center gap-3">
+                <i data-lucide="home" class="w-5 h-5 text-gold-400"></i> Beranda
+            </button>
+            <button onclick="switchTab('profile')" class="w-full text-left px-3 py-2.5 rounded-lg text-base font-medium text-slate-200 hover:bg-navy-800 flex items-center gap-3">
+                <i data-lucide="award" class="w-5 h-5 text-gold-400"></i> Profil OSIS
+            </button>
+            <button onclick="switchTab('members')" class="w-full text-left px-3 py-2.5 rounded-lg text-base font-medium text-slate-200 hover:bg-navy-800 flex items-center gap-3">
+                <i data-lucide="users" class="w-5 h-5 text-gold-400"></i> Direktori Anggota
+            </button>
+            <button onclick="switchTab('rating')" class="w-full text-left px-3 py-2.5 rounded-lg text-base font-medium text-slate-200 hover:bg-navy-800 flex items-center gap-3">
+                <i data-lucide="star" class="w-5 h-5 text-gold-400"></i> Rating Kinerja
+            </button>
+            <button onclick="switchTab('aspirasi')" class="w-full text-left px-3 py-2.5 rounded-lg text-base font-medium text-slate-200 hover:bg-navy-800 flex items-center gap-3">
+                <i data-lucide="message-square" class="w-5 h-5 text-gold-400"></i> Aspirasi & Pengaduan
+            </button>
+        </div>
+    </nav>
+
+    <!-- FLOATING BUTTON LOGIN PENGURUS OSIS (POJOK KIRI BAWAH) -->
+    <div class="fixed bottom-5 left-5 z-50">
+        <button id="auth-btn-main" onclick="toggleAdminPanel()" class="bg-gradient-to-r from-navy-900 to-navy-950 hover:from-navy-800 hover:to-navy-900 text-gold-400 font-bold px-4 py-3 rounded-2xl shadow-2xl transition border-2 border-gold-400/80 flex items-center gap-2.5 text-xs sm:text-sm group backdrop-blur-md">
+            <div class="w-7 h-7 rounded-xl bg-gold-500 text-navy-900 flex items-center justify-center font-black group-hover:scale-110 transition shadow-md">
+                <i data-lucide="lock" class="w-4 h-4"></i>
+            </div>
+            <span class="hidden sm:inline font-semibold">Login Pengurus OSIS</span>
+            <span class="sm:hidden font-semibold">Pengurus</span>
+        </button>
+    </div>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="flex-grow">
+        
+        <!-- ================= HALAMAN 1: HOME ================= -->
+        <section id="tab-home" class="tab-content">
+            <!-- Hero Section -->
+            <div class="navy-gradient text-white py-16 lg:py-24 relative overflow-hidden">
+                <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                        <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-gold-400 text-xs sm:text-sm font-semibold backdrop-blur-md">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i> Masa Bakti 2026/2027
+                            </div>
+                            <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight">
+                                Selamat Datang di Website Resmi <span class="text-transparent bg-clip-text bg-gradient-to-r from-gold-400 via-amber-300 to-gold-500">OSIS SMAN 1 Parlilitan</span>
+                            </h1>
+                            <p class="text-slate-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                                Wadah aspirasi, kreasi, dan pengabdian siswa SMA Negeri 1 Parlilitan. Berkomitmen menjadi organisasi yang aktif, inovatif, transparan, dan berintegritas tinggi.
+                            </p>
+                            <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
+                                <button onclick="switchTab('members')" class="bg-gold-500 hover:bg-gold-600 text-navy-900 font-bold px-7 py-3.5 rounded-xl shadow-lg hover:shadow-gold-500/20 transition flex items-center justify-center gap-2">
+                                    <i data-lucide="users" class="w-5 h-5"></i> Lihat Anggota OSIS
+                                </button>
+                                <button onclick="switchTab('aspirasi')" class="bg-white/10 hover:bg-white/20 text-white font-semibold px-7 py-3.5 rounded-xl border border-white/20 transition backdrop-blur-sm flex items-center justify-center gap-2">
+                                    <i data-lucide="send" class="w-5 h-5 text-gold-400"></i> Sampaikan Aspirasi
+                                </button>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-5 flex justify-center">
+                            <div class="relative w-72 h-72 sm:w-80 sm:h-80 bg-gradient-to-b from-gold-500/20 to-transparent p-4 rounded-3xl border border-white/10 backdrop-blur-md flex flex-col items-center justify-center text-center shadow-2xl">
+                                <div class="w-32 h-32 rounded-full bg-navy-900 border-4 border-gold-400 flex items-center justify-center shadow-xl mb-4 p-2 overflow-hidden">
+                                    <!-- Custom OSIS Logo Big Dynamic -->
+                                    <img id="logo-hero-big" src="" class="w-full h-full object-cover hidden" onerror="this.classList.add('hidden'); document.getElementById('svg-logo-hero').classList.remove('hidden');">
+                                    <svg id="svg-logo-hero" viewBox="0 0 100 100" class="w-full h-full">
+                                        <polygon points="50,5 92,25 92,75 50,95 8,75 8,25" fill="#f59e0b" stroke="#ffffff" stroke-width="2"/>
+                                        <circle cx="50" cy="50" r="32" fill="#0a192f" stroke="#fbbf24" stroke-width="2"/>
+                                        <path d="M50 24 L56 38 L72 40 L60 51 L63 66 L50 58 L37 66 L40 51 L28 40 L44 38 Z" fill="#fbbf24"/>
+                                        <rect x="44" y="65" width="12" height="15" fill="#ffffff"/>
+                                        <circle cx="50" cy="48" r="8" fill="#e11d48"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-xl font-bold text-white">SMAN 1 PARLILITAN</h3>
+                                <p class="text-xs text-gold-400 font-semibold tracking-wider mt-1">KABUPATEN HUMBANG HASUNDUTAN</p>
+                                <p class="text-xs text-slate-300 mt-2 px-4">"Cerdas, Berkarakter, Berbudaya & Unggul"</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News & Kegiatan Terbaru -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div class="flex flex-col md:flex-row md:items-end justify-between mb-10">
+                    <div>
+                        <span class="text-gold-600 font-bold text-xs uppercase tracking-wider">Kabar SMAN 1 Parlilitan</span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-1">Kegiatan & Berita Terkini OSIS</h2>
+                    </div>
+                    <a href="#" onclick="switchTab('profile')" class="mt-4 md:mt-0 text-navy-900 hover:text-gold-600 font-semibold text-sm flex items-center gap-1">
+                        Lihat Semua Program <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Cards injected via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HALAMAN 2: PROFIL OSIS ================= -->
+        <section id="tab-profile" class="tab-content hidden">
+            <!-- Header Profil -->
+            <div class="bg-navy-900 text-white py-12">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h1 class="text-3xl font-extrabold sm:text-4xl">Profil OSIS SMAN 1 Parlilitan</h1>
+                    <p class="mt-2 text-slate-300 text-sm sm:text-base max-w-2xl mx-auto">Mengenal lebih dekat sejarah, visi, misi, dan struktur kepengurusan organisasi siswa SMAN 1 Parlilitan.</p>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
+                <!-- Sejarah & Visi Misi -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-8 rounded-2xl shadow-md border border-slate-100">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-3 bg-gold-500/10 text-gold-600 rounded-xl">
+                                <i data-lucide="book-open" class="w-6 h-6"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-navy-900">Sejarah Singkat</h2>
+                        </div>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                            Organisasi Siswa Intra Sekolah (OSIS) SMA Negeri 1 Parlilitan didirikan seiring dengan berdirinya sekolah di wilayah Kabupaten Humbang Hasundutan. Sebagai satu-satunya wadah organisasi siswa yang sah di sekolah, OSIS telah menjadi motor penggerak berbagai kegiatan akademik, karakter, kedisiplinan, seni, dan olahraga.
+                        </p>
+                        <p class="text-slate-600 text-sm leading-relaxed">
+                            Secara konsisten, OSIS SMAN 1 Parlilitan mencetak generasi muda yang santun, aktif berkontribusi bagi sekolah, serta menjunjung tinggi integritas kepemimpinan.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-2xl shadow-md border border-slate-100 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="p-3 bg-navy-900/10 text-navy-900 rounded-xl">
+                                    <i data-lucide="target" class="w-6 h-6"></i>
+                                </div>
+                                <h2 class="text-xl font-bold text-navy-900">Visi & Misi</h2>
+                            </div>
+                            <div class="mb-4">
+                                <h3 class="font-bold text-xs uppercase text-gold-600 tracking-wider">Visi Utama</h3>
+                                <p class="text-slate-700 font-semibold text-base mt-1 leading-relaxed">"Mewujudkan seluruh siswa menjadi pribadi yang disiplin, kreatif, taat iman dan taqwa serta aktif berkolaborasi dalam menciptakan lingkungan sekolah yang bersih, aman dan nyaman."</p>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-xs uppercase text-gold-600 tracking-wider mb-2">Misi Utama</h3>
+                                <ul class="space-y-2 text-sm text-slate-600">
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5"></i> Meningkatkan ketakwaan kepada Tuhan Yang Maha Esa dan kedisiplinan berkarakter.</li>
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5"></i> Mempererat kolaborasi, gotong royong, dan lingkungan sekolah yang aman dan nyaman.</li>
+                                    <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5"></i> Menampung dan menindaklanjuti seluruh aspirasi siswa secara transparan dan responsif.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pembina OSIS Ringkas (Bagan Kotak Organisasi Dihapus) -->
+                <div class="bg-white p-8 rounded-2xl shadow-md border border-slate-100 text-center max-w-xl mx-auto">
+                    <div class="inline-block p-3 bg-navy-900 text-gold-400 rounded-2xl mb-3">
+                        <i data-lucide="user-check" class="w-8 h-8"></i>
+                    </div>
+                    <div class="text-xs text-gold-600 font-bold uppercase tracking-wider">Pembina OSIS SMAN 1 Parlilitan</div>
+                    <div id="display-pembina-name" class="font-black text-xl text-navy-900 mt-1">Dra. N. Situmorang, M.Pd</div>
+                    <div id="display-pembina-nip" class="text-xs text-slate-500 mt-0.5">NIP. 19780412 200501 2 004</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HALAMAN 3: DIREKTORI ANGGOTA ================= -->
+        <section id="tab-members" class="tab-content hidden">
+            <div class="bg-navy-900 text-white py-12">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h1 class="text-3xl font-extrabold sm:text-4xl">Direktori Seluruh Anggota OSIS</h1>
+                    <p class="mt-2 text-slate-300 text-sm sm:text-base max-w-2xl mx-auto">Temukan informasi profil, bidang tugas, dan kontak fungsional seluruh pengurus OSIS SMAN 1 Parlilitan.</p>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                <!-- Search & Filters Container -->
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-100 mb-8 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Search Box -->
+                        <div class="relative">
+                            <i data-lucide="search" class="w-5 h-5 absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="member-search" oninput="renderMembers()" placeholder="Cari nama anggota..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-navy-900 text-sm">
+                        </div>
+                        <!-- Filter Jabatan -->
+                        <div>
+                            <select id="filter-jabatan" onchange="renderMembers()" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-navy-900 text-sm text-slate-700">
+                                <option value="">Semua Jabatan</option>
+                                <option value="Ketua OSIS">Ketua OSIS</option>
+                                <option value="Wakil Ketua">Wakil Ketua</option>
+                                <option value="Sekretaris">Sekretaris</option>
+                                <option value="Bendahara">Bendahara</option>
+                                <option value="Koordinator Divisi">Koordinator Divisi</option>
+                                <option value="Anggota Sekbid">Anggota Sekbid</option>
+                            </select>
+                        </div>
+                        <!-- Filter Divisi -->
+                        <div>
+                            <select id="filter-divisi" onchange="renderMembers()" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-navy-900 text-sm text-slate-700">
+                                <option value="">Semua Sekbid/Divisi</option>
+                                <option value="BPH">BPH (Inti)</option>
+                                <option value="Sekbid 1 (Keagamaan)">Sekbid 1 (Keagamaan)</option>
+                                <option value="Sekbid 2 (Humas & Publikasi)">Sekbid 2 (Humas)</option>
+                                <option value="Sekbid 3 (Olahraga & Kesehatan)">Sekbid 3 (Olahraga)</option>
+                                <option value="Sekbid 4 (Seni & Kreativitas)">Sekbid 4 (Seni & Tekno)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Kartu Anggota -->
+                <div id="members-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Cards injection via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HALAMAN 4: RATING KINERJA ================= -->
+        <section id="tab-rating" class="tab-content hidden">
+            <div class="bg-navy-900 text-white py-12">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h1 class="text-3xl font-extrabold sm:text-4xl">Penilaian Kinerja Anggota OSIS</h1>
+                    <p class="mt-2 text-slate-300 text-sm sm:text-base max-w-2xl mx-auto">Suara siswa untuk transparansi & evaluasi kinerja pengurus. Berikan penilaian objektif demi perbaikan organisasi.</p>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+                <!-- Top Ratings & Leaderboard Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <!-- Top 3 Leaderboard -->
+                    <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-md border border-slate-100">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-2">
+                                <div class="p-2 bg-gold-500 text-navy-900 rounded-lg font-bold">
+                                    <i data-lucide="trophy" class="w-5 h-5"></i>
+                                </div>
+                                <h2 class="text-xl font-bold text-navy-900">Leaderboard Rating Kinerja Terbaik</h2>
+                            </div>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-medium">Berdasarkan Suara Siswa</span>
+                        </div>
+
+                        <div id="leaderboard-list" class="space-y-4">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Statistics Chart -->
+                    <div class="lg:col-span-5 bg-white p-6 rounded-2xl shadow-md border border-slate-100 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center gap-2 mb-4">
+                                <i data-lucide="bar-chart-3" class="w-5 h-5 text-navy-900"></i>
+                                <h2 class="text-lg font-bold text-navy-900">Statistik Rata-Rata Kriteria</h2>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-4">Grafik 5 indikator utama evaluasi pengurus OSIS SMAN 1 Parlilitan.</p>
+                            <div class="relative h-64">
+                                <canvas id="ratingChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Beri Rating Modal Trigger Grid -->
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-100">
+                    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-navy-900">Pilih Anggota Untuk Dinilai</h2>
+                            <p class="text-xs text-slate-500 mt-1">Klik tombol "Beri Rating" pada kartu anggota yang ingin Anda beri ulasan.</p>
+                        </div>
+                    </div>
+
+                    <div id="rating-members-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <!-- Injected JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HALAMAN 5: SUARA SISWA (ASPIRASI & PENGADUAN) ================= -->
+        <section id="tab-aspirasi" class="tab-content hidden">
+            <div class="bg-navy-900 text-white py-12">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <span class="bg-gold-500 text-navy-900 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider mb-2 inline-block">Layanan Terbuka</span>
+                    <h1 class="text-3xl font-extrabold sm:text-4xl">SUARA SISWA – ASPIRASI, SARAN & PENGADUAN</h1>
+                    <p class="mt-2 text-slate-300 text-sm sm:text-base max-w-2xl mx-auto">Sampaikan ide, pengaduan fasilitas, maupun saran untuk SMAN 1 Parlilitan. Terjamin aman dan opsi anonimitas penuh.</p>
+                </div>
+            </div>
+
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+                    <form id="aspirasi-form" onsubmit="handleAspirasiSubmit(event)" class="space-y-6">
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <!-- Kategori Laporan -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-2">Kategori Laporan <span class="text-red-500">*</span></label>
+                                <select id="asp-category" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy-900 focus:outline-none text-sm">
+                                    <option value="">-- Pilih Kategori --</option>
+                                    <option value="Saran Program OSIS">Saran Program Kerja OSIS</option>
+                                    <option value="Fasilitas Sekolah">Pengaduan Fasilitas Sekolah</option>
+                                    <option value="Pelayanan OSIS">Pelayanan / Kinerja OSIS</option>
+                                    <option value="Ide & Kreativitas">Ide Kegiatan Baru</option>
+                                    <option value="Lainnya">Laporan / Masalah Lainnya</option>
+                                </select>
+                            </div>
+
+                            <!-- Opsi Anonim / Identitas -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-2">Identitas Pelapor <span class="text-red-500">*</span></label>
+                                <select id="asp-anonymity" onchange="toggleIdentityFields()" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy-900 focus:outline-none text-sm font-medium">
+                                    <option value="anonim">Kirim Sebagai Anonim (Rahasia)</option>
+                                    <option value="identitas">Cantumkan Identitas Saya</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Kolom Identitas (Hidden if Anonim) -->
+                        <div id="identity-inputs" class="hidden grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Nama Lengkap</label>
+                                <input type="text" id="asp-name" placeholder="Nama siswa" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Kelas</label>
+                                <input type="text" id="asp-class" placeholder="Contoh: XI MIPA 1" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                            </div>
+                        </div>
+
+                        <!-- Judul Pengaduan -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-600 mb-2">Judul Laporan / Aspirasi <span class="text-red-500">*</span></label>
+                            <input type="text" id="asp-title" required placeholder="Tuliskan judul ringkas pengaduan Anda" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy-900 focus:outline-none text-sm">
+                        </div>
+
+                        <!-- Isi Laporan -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-600 mb-2">Isi Pesan Laporan <span class="text-red-500">*</span></label>
+                            <textarea id="asp-message" required rows="5" placeholder="Jelaskan secara rinci aspirasi, kronologi, atau saran Anda..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy-900 focus:outline-none text-sm"></textarea>
+                        </div>
+
+                        <!-- Upload Lampiran Simulasi -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-600 mb-2">Lampiran Bukti Foto/Dokumen (Opsional)</label>
+                            <input type="file" id="asp-attachment" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-navy-900 file:text-gold-400 hover:file:bg-navy-800 cursor-pointer">
+                            <span class="text-[11px] text-slate-400 mt-1 block">Format: JPG, PNG, PDF (Maks. 5MB)</span>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="pt-4">
+                            <button type="submit" class="w-full bg-gradient-to-r from-navy-900 to-navy-800 hover:from-navy-800 hover:to-navy-900 text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-base">
+                                <i data-lucide="send" class="w-5 h-5 text-gold-400"></i> Kirim Pengaduan Ke Database OSIS
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HALAMAN 6 & 7: PORTAL DASHBOARD PENGURUS & PENGADUAN RAHASIA ================= -->
+        <section id="tab-admin" class="tab-content hidden">
+            <!-- Header Admin Bar -->
+            <div class="bg-navy-950 text-white border-b border-slate-800 py-4 px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gold-500 flex items-center justify-center font-bold text-navy-900 p-1">
+                        <svg viewBox="0 0 100 100" class="w-full h-full">
+                            <polygon points="50,5 92,25 92,75 50,95 8,75 8,25" fill="#0a192f"/>
+                            <circle cx="50" cy="50" r="32" fill="#f59e0b"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-none">Portal Admin Pengurus OSIS</h1>
+                        <p class="text-xs text-slate-400 mt-1" id="current-user-role-display">Role Access: Super Admin Pengurus</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="switchAdminTab('complaints')" class="admin-tab-btn active px-3 py-2 rounded-lg text-xs font-semibold bg-navy-800 text-gold-400 border border-gold-500/30">
+                        <i data-lucide="lock" class="w-3.5 h-3.5 inline mr-1"></i> Pengaduan
+                    </button>
+                    <button onclick="switchAdminTab('members-mgmt')" class="admin-tab-btn px-3 py-2 rounded-lg text-xs font-semibold bg-navy-900 text-slate-300 hover:bg-navy-800">
+                        <i data-lucide="user-cog" class="w-3.5 h-3.5 inline mr-1"></i> Anggota
+                    </button>
+                    <button onclick="switchAdminTab('divisions-mgmt')" class="admin-tab-btn px-3 py-2 rounded-lg text-xs font-semibold bg-navy-900 text-slate-300 hover:bg-navy-800">
+                        <i data-lucide="layers" class="w-3.5 h-3.5 inline mr-1"></i> Divisi & Pembina
+                    </button>
+                    <button onclick="switchAdminTab('news-mgmt')" class="admin-tab-btn px-3 py-2 rounded-lg text-xs font-semibold bg-navy-900 text-slate-300 hover:bg-navy-800">
+                        <i data-lucide="newspaper" class="w-3.5 h-3.5 inline mr-1"></i> Beranda & Berita
+                    </button>
+                    <button onclick="switchAdminTab('users-mgmt')" class="admin-tab-btn px-3 py-2 rounded-lg text-xs font-semibold bg-navy-900 text-slate-300 hover:bg-navy-800">
+                        <i data-lucide="key" class="w-3.5 h-3.5 inline mr-1"></i> Akun Pengurus
+                    </button>
+                    <button onclick="switchAdminTab('maintenance')" class="admin-tab-btn px-3 py-2 rounded-lg text-xs font-semibold bg-gold-500/20 text-gold-400 border border-gold-500/40 hover:bg-gold-500/30">
+                        <i data-lucide="wrench" class="w-3.5 h-3.5 inline mr-1"></i> Maintenance Mandiri
+                    </button>
+                    <button onclick="logoutAdmin()" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1">
+                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Keluar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sub Section 1: Dashboard Pengaduan Rahasia -->
+            <div id="admin-tab-complaints" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Stat Cards Pengaduan -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-xs text-slate-500 font-bold uppercase">Total Laporan</div>
+                        <div id="adm-count-total" class="text-3xl font-black text-navy-900 mt-2">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-blue-500">
+                        <div class="text-xs text-blue-600 font-bold uppercase">Laporan Baru</div>
+                        <div id="adm-count-baru" class="text-3xl font-black text-navy-900 mt-2">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-amber-500">
+                        <div class="text-xs text-amber-600 font-bold uppercase">Sedang Diproses</div>
+                        <div id="adm-count-proses" class="text-3xl font-black text-navy-900 mt-2">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-500">
+                        <div class="text-xs text-emerald-600 font-bold uppercase">Selesai</div>
+                        <div id="adm-count-selesai" class="text-3xl font-black text-navy-900 mt-2">0</div>
+                    </div>
+                </div>
+
+                <!-- Daftar Laporan Masuk Table -->
+                <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <h2 class="font-extrabold text-lg text-navy-900 flex items-center gap-2">
+                            <i data-lucide="shield-alert" class="w-5 h-5 text-amber-500"></i> Pengelolaan Pengaduan Siswa
+                        </h2>
+                        <span class="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-bold">Audit Log Active</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+                                    <th class="p-4">Tanggal & ID</th>
+                                    <th class="p-4">Kategori & Judul</th>
+                                    <th class="p-4">Pelapor</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4 text-right">Aksi Management</th>
+                                </tr>
+                            </thead>
+                            <tbody id="complaints-table-body" class="divide-y divide-slate-100 text-sm">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub Section 2: Management Anggota OSIS (CRUD) -->
+            <div id="admin-tab-members-mgmt" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 mb-8 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-navy-900">Manajemen Data Anggota OSIS</h2>
+                        <p class="text-xs text-slate-500">Tambah, edit, atau hapus keanggotaan pengurus.</p>
+                    </div>
+                    <button onclick="openMemberFormModal()" class="bg-gold-500 text-navy-900 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 hover:bg-gold-600">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Tambah Anggota OSIS
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+                                    <th class="p-4">Nama Anggota</th>
+                                    <th class="p-4">Jabatan</th>
+                                    <th class="p-4">Divisi / Sekbid</th>
+                                    <th class="p-4">Kelas</th>
+                                    <th class="p-4 text-right">Aksi Pengelolaan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="members-admin-table-body" class="divide-y divide-slate-100 text-sm">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub Section 2.5: Management Divisi, Logo OSIS & Pembina OSIS -->
+            <div id="admin-tab-divisions-mgmt" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                <!-- Form Upload Logo OSIS Real-Time -->
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                    <h2 class="text-xl font-bold text-navy-900 mb-2">Pengelolaan Logo Resmi OSIS</h2>
+                    <p class="text-xs text-slate-500 mb-4">Ganti logo OSIS SMAN 1 Parlilitan secara real-time yang akan diterapkan di seluruh header, hero section, dan footer website.</p>
+                    <div class="flex flex-col sm:flex-row items-center gap-6">
+                        <div class="w-24 h-24 rounded-full bg-navy-900 border-2 border-gold-400 p-2 flex items-center justify-center overflow-hidden shrink-0">
+                            <img id="admin-logo-preview" src="" class="w-full h-full object-cover hidden">
+                            <svg id="admin-logo-svg" viewBox="0 0 100 100" class="w-full h-full">
+                                <polygon points="50,5 92,25 92,75 50,95 8,75 8,25" fill="#f59e0b"/>
+                                <circle cx="50" cy="50" r="32" fill="#0a192f"/>
+                            </svg>
+                        </div>
+                        <div class="space-y-3 flex-1 w-full">
+                            <input type="file" id="upload-logo-file" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-navy-900 file:text-gold-400 hover:file:bg-navy-800 cursor-pointer">
+                            <div class="flex gap-2">
+                                <button onclick="saveCustomLogo()" class="bg-gold-500 text-navy-900 font-bold px-4 py-2 rounded-xl text-xs hover:bg-gold-600">
+                                    Simpan Logo Baru Real-Time
+                                </button>
+                                <button onclick="resetLogoToDefault()" class="bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-xl text-xs hover:bg-slate-300">
+                                    Reset Ke Logo Vector
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Edit Pembina OSIS -->
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                    <h2 class="text-xl font-bold text-navy-900 mb-2">Pengelolaan Pembina OSIS</h2>
+                    <p class="text-xs text-slate-500 mb-4">Ubah nama dan NIP Pembina OSIS yang ditampilkan pada Halaman Profil.</p>
+                    <form onsubmit="handleSavePembina(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Nama Pembina & Gelar</label>
+                            <input type="text" id="pembina-name-input" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">NIP Pembina</label>
+                            <input type="text" id="pembina-nip-input" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button type="submit" class="bg-navy-900 text-gold-400 font-bold px-4 py-2.5 rounded-xl text-xs hover:bg-navy-800">
+                                Simpan Pembina OSIS
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Table & Management Divisi / Sekbid -->
+                <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-bold text-navy-900">Kelola Daftar Divisi / Sekbid</h2>
+                            <p class="text-xs text-slate-500">Tambah atau ubah divisi untuk kebutuhan keanggotaan OSIS.</p>
+                        </div>
+                        <button onclick="openAddDivisionModal()" class="bg-gold-500 text-navy-900 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 hover:bg-gold-600">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Tambah Divisi Baru
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+                                    <th class="p-4">Kode / ID</th>
+                                    <th class="p-4">Nama Divisi / Sekbid</th>
+                                    <th class="p-4">Deskripsi Singkat</th>
+                                    <th class="p-4 text-right">Aksi Pengelolaan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="divisions-admin-table-body" class="divide-y divide-slate-100 text-sm">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub Section 3: Management Beranda & Berita (Real-time CRUD) -->
+            <div id="admin-tab-news-mgmt" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 mb-8 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-navy-900">Kelola Informasi & Berita Beranda</h2>
+                        <p class="text-xs text-slate-500">Tambah kegiatan terbaru atau perbarui pengumuman beranda secara langsung.</p>
+                    </div>
+                    <button onclick="openNewsFormModal()" class="bg-gold-500 text-navy-900 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 hover:bg-gold-600">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Tambah Berita Baru
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+                                    <th class="p-4">Judul Berita & Foto</th>
+                                    <th class="p-4">Kategori</th>
+                                    <th class="p-4">Tanggal Published</th>
+                                    <th class="p-4 text-right">Opsi Pengelolaan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="news-admin-table-body" class="divide-y divide-slate-100 text-sm">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub Section 4: Management Akun Pengurus & Realtime Passwords -->
+            <div id="admin-tab-users-mgmt" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 mb-8 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-navy-900">Pengelolaan Hak Akses & Akun Pengurus</h2>
+                        <p class="text-xs text-slate-500">Tambah username baru atau ubah password akses pengurus secara real-time.</p>
+                    </div>
+                    <button onclick="openAddUserModal()" class="bg-navy-900 text-gold-400 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 hover:bg-navy-800">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Tambah Akun Pengurus
+                    </button>
+                </div>
+
+            <!-- Sub Section 5: FITUR PEMELIHARAAN MANDIRI (SELF-MAINTENANCE & SYSTEM HEALTH GUARD) -->
+            <div id="admin-tab-maintenance" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                        <div>
+                            <div class="flex items-center gap-2 text-navy-900">
+                                <i data-lucide="shield-check" class="w-6 h-6 text-emerald-500"></i>
+                                <h2 class="text-xl font-bold">Pusat Diagnostik & Pemeliharaan Mandiri</h2>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">Sistem deteksi dan perbaikan otomatis untuk menjaga performa dan integritas database website OSIS SMAN 1 Parlilitan.</p>
+                        </div>
+                        <div class="flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200">
+                            <span class="relative flex h-3 w-3">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                            </span>
+                            <span id="system-health-status" class="text-xs font-bold text-emerald-800">Status Sistem: 100% Normal</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Maintenance Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col justify-between">
+                            <div>
+                                <div class="p-3 bg-blue-100 text-blue-700 rounded-xl w-fit mb-3">
+                                    <i data-lucide="database-backup" class="w-6 h-6"></i>
+                                </div>
+                                <h3 class="font-bold text-navy-900 text-base">Perbaikan Otomatis Data</h3>
+                                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Mendeteksi dan memperbaiki elemen data yang corrupt, field kosong, atau error pada daftar anggota dan pengaduan.</p>
+                            </div>
+                            <button onclick="runAutoRepair()" class="mt-4 bg-navy-900 text-gold-400 hover:bg-navy-800 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                                <i data-lucide="zap" class="w-4 h-4"></i> Jalankan Auto-Repair
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col justify-between">
+                            <div>
+                                <div class="p-3 bg-amber-100 text-amber-700 rounded-xl w-fit mb-3">
+                                    <i data-lucide="image-off" class="w-6 h-6"></i>
+                                </div>
+                                <h3 class="font-bold text-navy-900 text-base">Pemulihan Gambar (Broken Assets)</h3>
+                                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Memeriksa tautan foto anggota atau berita yang tidak muncul dan menggantinya dengan foto resmi bawaan secara otomatis.</p>
+                            </div>
+                            <button onclick="runAssetRepair()" class="mt-4 bg-amber-600 text-white hover:bg-amber-700 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Pulihkan Gambar Rusak
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col justify-between">
+                            <div>
+                                <div class="p-3 bg-red-100 text-red-700 rounded-xl w-fit mb-3">
+                                    <i data-lucide="rotate-ccw" class="w-6 h-6"></i>
+                                </div>
+                                <h3 class="font-bold text-navy-900 text-base">Reset State Master Database</h3>
+                                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Mengembalikan seluruh data anggota, berita, dan pengaduan ke data awal pabrikan apabila terjadi error parah.</p>
+                            </div>
+                            <button onclick="runMasterReset()" class="mt-4 bg-red-600 text-white hover:bg-red-700 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                                <i data-lucide="alert-triangle" class="w-4 h-4"></i> Reset Ke Standar Pabrik
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Maintenance Log Console -->
+                <div class="bg-navy-950 rounded-2xl p-6 border border-slate-800 text-white shadow-lg">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+                        <div class="flex items-center gap-2 font-mono text-xs text-gold-400 font-bold">
+                            <i data-lucide="terminal" class="w-4 h-4"></i> LOG PEMELIHARAAN SISTEM
+                        </div>
+                        <button onclick="clearMaintenanceLog()" class="text-[11px] text-slate-400 hover:text-white">Bersihkan Console</button>
+                    </div>
+                    <div id="maintenance-console-log" class="font-mono text-xs space-y-1.5 max-h-48 overflow-y-auto text-slate-300">
+                        <div>[SYSTEM] Inisialisasi modul Self-Maintenance System v1.0.0 siap digunakan.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-navy-950 text-white border-t border-navy-900 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-9 h-9 rounded-full bg-navy-900 border border-gold-400 flex items-center justify-center p-1">
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <polygon points="50,5 92,25 92,75 50,95 8,75 8,25" fill="#f59e0b"/>
+                                <circle cx="50" cy="50" r="32" fill="#0a192f"/>
+                            </svg>
+                        </div>
+                        <span class="font-extrabold text-lg tracking-tight">OSIS SMAN 1 PARLILITAN</span>
+                    </div>
+                    <p class="text-slate-400 text-xs leading-relaxed">
+                        Kecamatan Parlilitan, Kabupaten Humbang Hasundutan, Sumatera Utara. Wadah kepemimpinan siswa yang berintegritas dan berkarakter.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-gold-400 uppercase tracking-wider mb-4">Tautan Cepat</h4>
+                    <ul class="space-y-2 text-xs text-slate-300">
+                        <li><a href="#" onclick="switchTab('home')" class="hover:text-gold-400">Beranda Utama</a></li>
+                        <li><a href="#" onclick="switchTab('profile')" class="hover:text-gold-400">Visi & Misi OSIS</a></li>
+                        <li><a href="#" onclick="switchTab('members')" class="hover:text-gold-400">Direktori Pengurus</a></li>
+                        <li><a href="#" onclick="switchTab('aspirasi')" class="hover:text-gold-400">Suara Siswa & Aspirasi</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-gold-400 uppercase tracking-wider mb-4">Sistem Keamanan</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed mb-3">
+                        Portal Layanan Pengaduan dilindungi dengan Autentikasi Username & Password Pengurus OSIS Terverifikasi.
+                    </p>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span id="footer-health-text" class="text-[11px] text-emerald-400 font-mono">Self-Health Guard Active</span>
+                    </div>
+                    <div class="text-[11px] text-slate-500 font-mono mt-1">
+                        System Version v2.8.0-AutoRepair
+                    </div>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-slate-800/80 text-center text-xs text-slate-500">
+                &copy; 2026 OSIS SMA Negeri 1 Parlilitan. Digital Organization System. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- ================= MODAL & DIALOG CONTAINERS ================= -->
+
+    <!-- MODAL 2: LOGIN PENGURUS MANUAL -->
+    <div id="modal-admin-login" class="fixed inset-0 bg-navy-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl relative border border-slate-100">
+            <button onclick="closeAdminLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <div class="text-center space-y-2 mb-6">
+                <div class="w-12 h-12 bg-gold-500 text-navy-900 rounded-2xl flex items-center justify-center mx-auto shadow-md font-bold">
+                    <i data-lucide="lock" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-xl font-extrabold text-navy-900">Login Pengurus OSIS</h3>
+                <p class="text-xs text-slate-500">Masukkan Username & Password Akun Resmi</p>
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Username Pengurus</label>
+                    <input type="text" id="login-username" required placeholder="Contoh: admin" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-navy-900 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-navy-900 focus:outline-none">
+                </div>
+                <div class="text-xs bg-slate-50 p-2.5 rounded-lg text-slate-500">
+                    Default Login Demo: <b class="text-navy-900">admin</b> / <b class="text-navy-900">123456</b>
+                </div>
+                <button type="submit" class="w-full bg-navy-900 hover:bg-navy-800 text-gold-400 font-bold py-3 rounded-xl text-sm transition">
+                    Masuk Dashboard Admin
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: DETAIL ANGGOTA OSIS -->
+    <div id="modal-member-detail" class="fixed inset-0 bg-navy-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden border border-slate-100">
+            <button onclick="closeMemberDetailModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <div id="member-detail-content">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: BERI RATING ANGGOTA -->
+    <div id="modal-give-rating" class="fixed inset-0 bg-navy-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-slate-100">
+            <button onclick="closeGiveRatingModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <div class="text-center space-y-2 mb-4">
+                <h3 class="text-xl font-extrabold text-navy-900">Penilaian Kinerja Pengurus</h3>
+                <p class="text-xs text-slate-500">Memberikan ulasan objektif untuk <span id="rating-target-name" class="font-bold text-navy-900">Anggota</span></p>
+            </div>
+
+            <form onsubmit="handleRatingSubmit(event)" class="space-y-4">
+                <input type="hidden" id="rating-target-id">
+                
+                <!-- Bintang Interactive -->
+                <div class="text-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-2">Pilih Rating Bintang</label>
+                    <div class="flex justify-center gap-2" id="star-rating-selector">
+                        <i data-lucide="star" onclick="setRatingStars(1)" class="w-8 h-8 cursor-pointer text-slate-300 hover:text-gold-500 fill-current"></i>
+                        <i data-lucide="star" onclick="setRatingStars(2)" class="w-8 h-8 cursor-pointer text-slate-300 hover:text-gold-500 fill-current"></i>
+                        <i data-lucide="star" onclick="setRatingStars(3)" class="w-8 h-8 cursor-pointer text-slate-300 hover:text-gold-500 fill-current"></i>
+                        <i data-lucide="star" onclick="setRatingStars(4)" class="w-8 h-8 cursor-pointer text-slate-300 hover:text-gold-500 fill-current"></i>
+                        <i data-lucide="star" onclick="setRatingStars(5)" class="w-8 h-8 cursor-pointer text-slate-300 hover:text-gold-500 fill-current"></i>
+                    </div>
+                    <span id="star-label" class="text-xs font-bold text-navy-900 mt-2 block">5 / 5 - Sangat Baik</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Komentar / Alasan Penilaian</label>
+                    <textarea id="rating-comment" required rows="3" placeholder="Tulis masukan atau alasan penilaian secara santun..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-navy-900 focus:outline-none"></textarea>
+                </div>
+
+                <div class="text-[11px] text-slate-400 bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-amber-800 flex items-center gap-1.5">
+                    <i data-lucide="shield" class="w-4 h-4 shrink-0"></i>
+                    Identitas Anda tidak akan ditampilkan ke publik (Sistem Keamanan Ulasan).
+                </div>
+
+                <button type="submit" class="w-full bg-navy-900 hover:bg-navy-800 text-gold-400 font-bold py-3 rounded-xl text-sm transition">
+                    Kirim Penilaian
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 5: DETAIL PENGADUAN (ADMIN VIEW) -->
+    <div id="modal-complaint-detail" class="fixed inset-0 bg-navy-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeComplaintDetailModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <div id="complaint-detail-content">
+                <!-- Injected JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: FORM TAMBAH / EDIT ANGGOTA OSIS (UPLOAD FILE GAMBAR) -->
+    <div id="modal-member-form" class="fixed inset-0 bg-navy-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeMemberFormModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <h3 id="member-form-title" class="text-xl font-extrabold text-navy-900 mb-4">Tambah Anggota OSIS Baru</h3>
+
+            <form onsubmit="handleMemberFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="form-member-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nama Lengkap</label>
+                    <input type="text" id="form-member-name" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Jabatan</label>
+                        <select id="form-member-jabatan" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                            <option value="Ketua OSIS">Ketua OSIS</option>
+                            <option value="Wakil Ketua">Wakil Ketua</option>
+                            <option value="Sekretaris">Sekretaris</option>
+                            <option value="Bendahara">Bendahara</option>
+                            <option value="Koordinator Divisi">Koordinator Divisi</option>
+                            <option value="Anggota Sekbid">Anggota Sekbid</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Kelas</label>
+                        <input type="text" id="form-member-kelas" required placeholder="XI MIPA 1" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Divisi / Sekbid</label>
+                    <select id="form-member-divisi" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                        <option value="BPH">BPH (Inti)</option>
+                        <option value="Sekbid 1 (Keagamaan)">Sekbid 1 (Keagamaan)</option>
+                        <option value="Sekbid 2 (Humas & Publikasi)">Sekbid 2 (Humas & Publikasi)</option>
+                        <option value="Sekbid 3 (Olahraga & Kesehatan)">Sekbid 3 (Olahraga & Kesehatan)</option>
+                        <option value="Sekbid 4 (Seni & Kreativitas)">Sekbid 4 (Seni & Kreativitas)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Tugas & Deskripsi Singkat</label>
+                    <textarea id="form-member-desc" rows="3" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Upload Foto Anggota (Dari Perangkat)</label>
+                    <input type="file" id="form-member-photo-file" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-navy-900 file:text-gold-400 hover:file:bg-navy-800 cursor-pointer">
+                    <div id="member-photo-preview" class="mt-2 hidden">
+                        <img src="" class="w-16 h-16 rounded-full object-cover border-2 border-gold-400">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-navy-900 text-gold-400 font-bold py-3 rounded-xl text-sm">
+                    Simpan Data Anggota
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 7: FORM TAMBAH / EDIT BERITA BERANDA (UPLOAD FILE GAMBAR) -->
+    <div id="modal-news-form" class="fixed inset-0 bg-navy-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeNewsFormModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <h3 id="news-form-title" class="text-xl font-extrabold text-navy-900 mb-4">Tambah Berita / Kegiatan Beranda</h3>
+
+            <form onsubmit="handleNewsFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="form-news-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Judul Berita / Kegiatan</label>
+                    <input type="text" id="form-news-title" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Kategori</label>
+                        <input type="text" id="form-news-category" placeholder="Contoh: Kepemimpinan" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Tanggal</label>
+                        <input type="text" id="form-news-date" placeholder="14 Oktober 2026" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Ringkasan Berita</label>
+                    <textarea id="form-news-desc" rows="3" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Upload Foto Sampul Kegiatan (Dari Perangkat)</label>
+                    <input type="file" id="form-news-photo-file" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-navy-900 file:text-gold-400 hover:file:bg-navy-800 cursor-pointer">
+                    <div id="news-photo-preview" class="mt-2 hidden">
+                        <img src="" class="w-24 h-16 rounded-lg object-cover border border-slate-200">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-navy-900 text-gold-400 font-bold py-3 rounded-xl text-sm">
+                    Terbitkan Ke Beranda Real-Time
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 8: FORM TAMBAH AKUN PENGURUS BARU / EDIT PASSWORD -->
+    <div id="modal-user-form" class="fixed inset-0 bg-navy-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-slate-100">
+            <button onclick="closeUserFormModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <h3 id="user-form-title" class="text-xl font-extrabold text-navy-900 mb-4">Tambah Akun Akses Pengurus</h3>
+
+            <form onsubmit="handleUserFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="form-user-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Username Akses</label>
+                    <input type="text" id="form-user-name" required placeholder="Contoh: gabriel_osis" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nama Pemilik Akun</label>
+                    <input type="text" id="form-user-fullname" required placeholder="Contoh: Gabriel Tumanggor" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Password Baru (Realtime)</label>
+                    <input type="text" id="form-user-pass" required placeholder="••••••••" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-mono">
+                </div>
+                <button type="submit" class="w-full bg-navy-900 text-gold-400 font-bold py-3 rounded-xl text-sm">
+                    Simpan Akun Pengurus
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 9: FORM TAMBAH / EDIT DIVISI SEKBID -->
+    <div id="modal-division-form" class="fixed inset-0 bg-navy-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-slate-100">
+            <button onclick="closeDivisionFormModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <h3 id="division-form-title" class="text-xl font-extrabold text-navy-900 mb-4">Tambah Divisi / Sekbid</h3>
+            <form onsubmit="handleDivisionFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="form-division-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nama Divisi / Sekbid</label>
+                    <input type="text" id="form-division-name" required placeholder="Contoh: Sekbid 5 (Bela Negara)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Deskripsi Singkat</label>
+                    <textarea id="form-division-desc" rows="3" required placeholder="Jelaskan peran divisi..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-navy-900 text-gold-400 font-bold py-3 rounded-xl text-sm">
+                    Simpan Data Divisi
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        // LOAD PERSISTENT DATA FROM LOCALSTORAGE OR WINDOW SCOPE
+        let customLogoBase64 = window.customLogoBase64;
+        let newsData = window.newsData;
+        let pembinaData = window.pembinaData;
+        let divisionsData = window.divisionsData;
+        let membersData = window.membersData;
+        let complaintsData = window.complaintsData;
+        let adminUsersData = window.adminUsersData;
+
+        // HELPER TO SAVE ALL STATE PERMANENTLY (LOCAL & REALTIME CLOUD)
+        function syncStateLocalAndCloud() {
+            window.customLogoBase64 = customLogoBase64;
+            window.newsData = newsData;
+            window.pembinaData = pembinaData;
+            window.divisionsData = divisionsData;
+            window.membersData = membersData;
+            window.complaintsData = complaintsData;
+            window.adminUsersData = adminUsersData;
+
+            window.saveAllStateToStorage();
+        }
+
+        // AUTOMATIC UI RE-RENDER WHEN CLOUD DATA CHANGES
+        window.syncAllCloudUI = function() {
+            customLogoBase64 = window.customLogoBase64;
+            newsData = window.newsData;
+            pembinaData = window.pembinaData;
+            divisionsData = window.divisionsData;
+            membersData = window.membersData;
+            complaintsData = window.complaintsData;
+            adminUsersData = window.adminUsersData;
+
+            if (customLogoBase64) {
+                saveCustomLogoDisplayOnly(customLogoBase64);
+            } else {
+                const navImg = document.getElementById('logo-main-nav');
+                const navSvg = document.getElementById('svg-logo-nav');
+                if (navImg) navImg.classList.add('hidden');
+                if (navSvg) navSvg.classList.remove('hidden');
+
+                const heroImg = document.getElementById('logo-hero-big');
+                const heroSvg = document.getElementById('svg-logo-hero');
+                if (heroImg) heroImg.classList.add('hidden');
+                if (heroSvg) heroSvg.classList.remove('hidden');
+            }
+
+            renderHomeNews();
+            updatePembinaDisplay();
+            updateDivisionOptions();
+            renderMembers();
+            renderRatingMembers();
+            renderLeaderboard();
+            updateStatsCount();
+
+            if (isAdminLoggedIn) {
+                renderComplaintsTable();
+                renderMembersAdminTable();
+                renderUsersAdminTable();
+                renderDivisionsAdminTable();
+                renderNewsAdminTable();
+            }
+        };
+
+        let ratingCommentsData = [];
+        let currentSelectedRatingStars = 5;
+        let isAdminLoggedIn = false;
+        let tempMemberBase64 = "";
+        let tempNewsBase64 = "";
+
+        // AUTH & ADMIN PANEL CONTROLLERS
+        function toggleAdminPanel() {
+            if (isAdminLoggedIn) {
+                switchTab('admin');
+            } else {
+                openAdminLoginModal();
+            }
+        }
+
+        function openAdminLoginModal() {
+            const modal = document.getElementById('modal-admin-login');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeAdminLoginModal() {
+            const modal = document.getElementById('modal-admin-login');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-username').value;
+            const p = document.getElementById('login-password').value;
+
+            const userFound = adminUsersData.find(x => x.username.toLowerCase() === u.toLowerCase() && x.pass === p);
+
+            if (userFound) {
+                isAdminLoggedIn = true;
+                closeAdminLoginModal();
+                showToast("Login Berhasil", `Selamat datang, ${userFound.fullname}!`);
+                const authBtn = document.getElementById('auth-btn-main');
+                if (authBtn) {
+                    authBtn.innerHTML = `<div class="w-7 h-7 rounded-xl bg-gold-500 text-navy-900 flex items-center justify-center font-black transition shadow-md"><i data-lucide="layout-dashboard" class="w-4 h-4"></i></div><span class="hidden sm:inline font-semibold">Dashboard Admin</span><span class="sm:hidden font-semibold">Admin</span>`;
+                }
+                switchTab('admin');
+                renderComplaintsTable();
+                renderMembersAdminTable();
+                renderUsersAdminTable();
+                renderDivisionsAdminTable();
+                renderNewsAdminTable();
+                if (window.lucide && typeof lucide.createIcons === 'function') {
+                    lucide.createIcons();
+                }
+            } else {
+                showToast("Login Gagal", "Username atau Password pengurus tidak terdaftar!", "error");
+            }
+        }
+
+        function logoutAdmin() {
+            isAdminLoggedIn = false;
+            const authBtn = document.getElementById('auth-btn-main');
+            if (authBtn) {
+                authBtn.innerHTML = `<div class="w-7 h-7 rounded-xl bg-gold-500 text-navy-900 flex items-center justify-center font-black transition shadow-md"><i data-lucide="lock" class="w-4 h-4"></i></div><span class="hidden sm:inline font-semibold">Login Pengurus OSIS</span><span class="sm:hidden font-semibold">Pengurus</span>`;
+            }
+            switchTab('home');
+            showToast("Logout", "Anda telah keluar dari Portal Admin Pengurus.");
+        }
+
+        // PEMBINA & DIVISIONS DISPLAY HELPERS
+        function updatePembinaDisplay() {
+            const nameEl = document.getElementById('display-pembina-name');
+            const nipEl = document.getElementById('display-pembina-nip');
+            if (nameEl) nameEl.innerText = pembinaData.name;
+            if (nipEl) nipEl.innerText = pembinaData.nip;
+
+            const nameInput = document.getElementById('pembina-name-input');
+            const nipInput = document.getElementById('pembina-nip-input');
+            if (nameInput) nameInput.value = pembinaData.name;
+            if (nipInput) nipInput.value = pembinaData.nip;
+        }
+
+        function updateDivisionOptions() {
+            const memberSelect = document.getElementById('form-member-divisi');
+            const filterSelect = document.getElementById('filter-divisi');
+
+            if (memberSelect) {
+                memberSelect.innerHTML = divisionsData.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+            }
+            if (filterSelect) {
+                const currentVal = filterSelect.value;
+                filterSelect.innerHTML = `<option value="">Semua Sekbid/Divisi</option>` + 
+                    divisionsData.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+                filterSelect.value = currentVal;
+            }
+        }
+
+        function toggleIdentityFields() {
+            const val = document.getElementById('asp-anonymity')?.value;
+            const container = document.getElementById('identity-inputs');
+            if (!container) return;
+            if (val === 'identitas') {
+                container.classList.remove('hidden');
+                container.classList.add('grid');
+            } else {
+                container.classList.add('hidden');
+                container.classList.remove('grid');
+            }
+        }
+
+        // 2. INITIALIZATION ON LOAD
+        window.onload = function() {
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+
+            // Restore Custom Logo if Saved Previously
+            if (customLogoBase64) {
+                saveCustomLogoDisplayOnly(customLogoBase64);
+            }
+
+            renderHomeNews();
+            updatePembinaDisplay();
+            updateDivisionOptions();
+            renderMembers();
+            renderRatingMembers();
+            renderLeaderboard();
+            initRatingChart();
+            updateStatsCount();
+
+            // Setup Logo OSIS Image Upload Reader
+            document.getElementById('upload-logo-file')?.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        customLogoBase64 = evt.target.result;
+                        const prev = document.getElementById('admin-logo-preview');
+                        const svg = document.getElementById('admin-logo-svg');
+                        if (prev) {
+                            prev.src = customLogoBase64;
+                            prev.classList.remove('hidden');
+                        }
+                        if (svg) svg.classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Setup Base64 image reader listeners
+            document.getElementById('form-member-photo-file')?.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        tempMemberBase64 = evt.target.result;
+                        const prev = document.getElementById('member-photo-preview');
+                        if (prev) {
+                            prev.classList.remove('hidden');
+                            prev.querySelector('img').src = tempMemberBase64;
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            document.getElementById('form-news-photo-file')?.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        tempNewsBase64 = evt.target.result;
+                        const prev = document.getElementById('news-photo-preview');
+                        if (prev) {
+                            prev.classList.remove('hidden');
+                            prev.querySelector('img').src = tempNewsBase64;
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        };
+
+        // ADMIN TABLES RENDER FUNCTIONS
+        function renderMembersAdminTable() {
+            const tbody = document.getElementById('members-admin-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            membersData.forEach(m => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 flex items-center space-x-3">
+                        <img src="${m.photo}" class="w-9 h-9 rounded-full object-cover" onerror="this.src='https://placehold.co/100x100/0a192f/ffffff?text=OSIS'">
+                        <span class="font-bold text-navy-900">${m.name}</span>
+                    </td>
+                    <td class="p-4 text-xs font-semibold text-slate-700">${m.jabatan}</td>
+                    <td class="p-4 text-xs text-slate-500">${m.divisi}</td>
+                    <td class="p-4 text-xs text-slate-500">${m.kelas}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="editMember(${m.id})" class="text-blue-600 hover:text-blue-800 text-xs font-bold">Edit</button>
+                        <button onclick="deleteMember(${m.id})" class="text-red-600 hover:text-red-800 text-xs font-bold">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderComplaintsTable() {
+            const tbody = document.getElementById('complaints-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            let cTotal = complaintsData.length;
+            let cBaru = complaintsData.filter(x => x.status === 'Baru').length;
+            let cProses = complaintsData.filter(x => x.status === 'Sedang Diproses').length;
+            let cSelesai = complaintsData.filter(x => x.status === 'Selesai').length;
+
+            const totEl = document.getElementById('adm-count-total');
+            const barEl = document.getElementById('adm-count-baru');
+            const proEl = document.getElementById('adm-count-proses');
+            const selEl = document.getElementById('adm-count-selesai');
+
+            if (totEl) totEl.innerText = cTotal;
+            if (barEl) barEl.innerText = cBaru;
+            if (proEl) proEl.innerText = cProses;
+            if (selEl) selEl.innerText = cSelesai;
+
+            if (complaintsData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada pengaduan siswa.</td></tr>`;
+                return;
+            }
+
+            complaintsData.forEach(c => {
+                let badgeClass = "bg-blue-100 text-blue-800";
+                if (c.status === "Sedang Diproses") badgeClass = "bg-amber-100 text-amber-800";
+                if (c.status === "Selesai") badgeClass = "bg-emerald-100 text-emerald-800";
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 text-xs">
+                        <div class="font-bold text-navy-900">${c.id}</div>
+                        <div class="text-slate-400 text-[11px]">${c.date}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="font-bold text-navy-900 text-sm">${c.title}</div>
+                        <div class="text-xs text-slate-500">${c.category}</div>
+                    </td>
+                    <td class="p-4 text-xs font-medium text-slate-700">${c.pelapor}</td>
+                    <td class="p-4">
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full ${badgeClass}">${c.status}</span>
+                    </td>
+                    <td class="p-4 text-right">
+                        <button onclick="openComplaintDetail('${c.id}')" class="bg-navy-900 text-gold-400 font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-navy-800">
+                            Kelola
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderUsersAdminTable() {
+            const tbody = document.getElementById('users-admin-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            adminUsersData.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 font-bold text-navy-900 font-mono text-sm">${u.username}</td>
+                    <td class="p-4 text-xs text-slate-700">${u.fullname}</td>
+                    <td class="p-4 font-mono text-xs text-slate-500">${u.pass}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="editUser(${u.id})" class="text-blue-600 hover:text-blue-800 text-xs font-bold">Ubah Pass</button>
+                        ${u.id !== 1 ? `<button onclick="deleteUser(${u.id})" class="text-red-600 hover:text-red-800 text-xs font-bold">Hapus</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderDivisionsAdminTable() {
+            const tbody = document.getElementById('divisions-admin-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            divisionsData.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 font-mono text-xs text-slate-500">DIV-${d.id}</td>
+                    <td class="p-4 font-bold text-navy-900 text-sm">${d.name}</td>
+                    <td class="p-4 text-xs text-slate-600">${d.desc}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="editDivision(${d.id})" class="text-blue-600 hover:text-blue-800 text-xs font-bold">Edit</button>
+                        <button onclick="deleteDivision(${d.id})" class="text-red-600 hover:text-red-800 text-xs font-bold">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // MODAL OPEN & EDIT HELPERS
+        function openMemberFormModal() {
+            tempMemberBase64 = "";
+            document.getElementById('member-form-title').innerText = "Tambah Anggota OSIS Baru";
+            document.getElementById('form-member-id').value = "";
+            document.getElementById('form-member-name').value = "";
+            document.getElementById('form-member-kelas').value = "";
+            document.getElementById('form-member-desc').value = "";
+            document.getElementById('form-member-photo-file').value = "";
+            document.getElementById('member-photo-preview').classList.add('hidden');
+            document.getElementById('modal-member-form').classList.remove('hidden');
+        }
+
+        function closeMemberFormModal() {
+            document.getElementById('modal-member-form').classList.add('hidden');
+        }
+
+        function editMember(id) {
+            const m = membersData.find(x => x.id === id);
+            if (!m) return;
+            tempMemberBase64 = m.photo;
+            document.getElementById('member-form-title').innerText = "Edit Anggota OSIS";
+            document.getElementById('form-member-id').value = m.id;
+            document.getElementById('form-member-name').value = m.name;
+            document.getElementById('form-member-jabatan').value = m.jabatan;
+            document.getElementById('form-member-kelas').value = m.kelas;
+            document.getElementById('form-member-divisi').value = m.divisi;
+            document.getElementById('form-member-desc').value = m.desc;
+            document.getElementById('form-member-photo-file').value = "";
+            
+            const prev = document.getElementById('member-photo-preview');
+            prev.classList.remove('hidden');
+            prev.querySelector('img').src = m.photo;
+
+            document.getElementById('modal-member-form').classList.remove('hidden');
+        }
+
+        function openAddUserModal() {
+            document.getElementById('user-form-title').innerText = "Tambah Akun Akses Pengurus";
+            document.getElementById('form-user-id').value = "";
+            document.getElementById('form-user-name').value = "";
+            document.getElementById('form-user-fullname').value = "";
+            document.getElementById('form-user-pass').value = "";
+            document.getElementById('modal-user-form').classList.remove('hidden');
+        }
+
+        function closeUserFormModal() {
+            document.getElementById('modal-user-form').classList.add('hidden');
+        }
+
+        function editUser(id) {
+            const u = adminUsersData.find(x => x.id === id);
+            if (!u) return;
+            document.getElementById('user-form-title').innerText = "Ubah Password Akun Pengurus";
+            document.getElementById('form-user-id').value = u.id;
+            document.getElementById('form-user-name').value = u.username;
+            document.getElementById('form-user-fullname').value = u.fullname;
+            document.getElementById('form-user-pass').value = u.pass;
+            document.getElementById('modal-user-form').classList.remove('hidden');
+        }
+
+        function openAddDivisionModal() {
+            document.getElementById('division-form-title').innerText = "Tambah Divisi / Sekbid Baru";
+            document.getElementById('form-division-id').value = "";
+            document.getElementById('form-division-name').value = "";
+            document.getElementById('form-division-desc').value = "";
+            document.getElementById('modal-division-form').classList.remove('hidden');
+        }
+
+        function closeDivisionFormModal() {
+            document.getElementById('modal-division-form').classList.add('hidden');
+        }
+
+        function editDivision(id) {
+            const d = divisionsData.find(x => x.id === id);
+            if (!d) return;
+            document.getElementById('division-form-title').innerText = "Edit Divisi / Sekbid";
+            document.getElementById('form-division-id').value = d.id;
+            document.getElementById('form-division-name').value = d.name;
+            document.getElementById('form-division-desc').value = d.desc;
+            document.getElementById('modal-division-form').classList.remove('hidden');
+        }
+
+        function openComplaintDetail(id) {
+            const c = complaintsData.find(x => x.id === id);
+            if (!c) return;
+
+            const content = document.getElementById('complaint-detail-content');
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <span class="text-xs text-slate-400 font-mono">${c.id}</span>
+                            <h3 class="text-lg font-bold text-navy-900">${c.title}</h3>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 rounded-full font-bold bg-navy-900 text-gold-400">${c.category}</span>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl text-xs space-y-1">
+                        <div><span class="text-slate-400">Tanggal Transaksi:</span> <b>${c.date}</b></div>
+                        <div><span class="text-slate-400">Pelapor:</span> <b>${c.pelapor}</b></div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Isi Pesan Laporan</label>
+                        <p class="text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100 leading-relaxed">${c.message}</p>
+                    </div>
+
+                    <div class="space-y-2 pt-2 border-t border-slate-100">
+                        <label class="block text-xs font-bold text-navy-900 uppercase">Ubah Status Laporan</label>
+                        <select id="update-comp-status" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                            <option value="Baru" ${c.status === 'Baru' ? 'selected' : ''}>Baru</option>
+                            <option value="Sedang Diproses" ${c.status === 'Sedang Diproses' ? 'selected' : ''}>Sedang Diproses</option>
+                            <option value="Selesai" ${c.status === 'Selesai' ? 'selected' : ''}>Selesai</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-navy-900 uppercase mb-1">Catatan Internal Pengurus</label>
+                        <textarea id="update-comp-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">${c.notes || ''}</textarea>
+                    </div>
+
+                    <button onclick="saveComplaintUpdate('${c.id}')" class="w-full bg-navy-900 text-gold-400 font-bold py-3 rounded-xl text-sm hover:bg-navy-800">
+                        Simpan Perubahan Laporan
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('modal-complaint-detail').classList.remove('hidden');
+        }
+
+        function closeComplaintDetailModal() {
+            document.getElementById('modal-complaint-detail').classList.add('hidden');
+        }
+
+        function saveCustomLogoDisplayOnly(base64Logo) {
+            const navImg = document.getElementById('logo-main-nav');
+            const navSvg = document.getElementById('svg-logo-nav');
+            if (navImg) {
+                navImg.src = base64Logo;
+                navImg.classList.remove('hidden');
+            }
+            if (navSvg) navSvg.classList.add('hidden');
+
+            const heroImg = document.getElementById('logo-hero-big');
+            const heroSvg = document.getElementById('svg-logo-hero');
+            if (heroImg) {
+                heroImg.src = base64Logo;
+                heroImg.classList.remove('hidden');
+            }
+            if (heroSvg) heroSvg.classList.add('hidden');
+
+            const adminPrev = document.getElementById('admin-logo-preview');
+            const adminSvg = document.getElementById('admin-logo-svg');
+            if (adminPrev) {
+                adminPrev.src = base64Logo;
+                adminPrev.classList.remove('hidden');
+            }
+            if (adminSvg) adminSvg.classList.add('hidden');
+        }
+
+        // REAL-TIME LOGO MANAGEMENT
+        function saveCustomLogo() {
+            if (!customLogoBase64) {
+                showToast("Pemberitahuan", "Pilih file gambar logo terlebih dahulu.");
+                return;
+            }
+
+            saveCustomLogoDisplayOnly(customLogoBase64);
+            syncStateLocalAndCloud();
+            showToast("Berhasil", "Logo OSIS resmi telah disimpan secara permanen!");
+        }
+
+        function resetLogoToDefault() {
+            customLogoBase64 = "";
+            localStorage.removeItem('osis_custom_logo');
+
+            const navImg = document.getElementById('logo-main-nav');
+            const navSvg = document.getElementById('svg-logo-nav');
+            if (navImg) navImg.classList.add('hidden');
+            if (navSvg) navSvg.classList.remove('hidden');
+
+            const heroImg = document.getElementById('logo-hero-big');
+            const heroSvg = document.getElementById('svg-logo-hero');
+            if (heroImg) heroImg.classList.add('hidden');
+            if (heroSvg) heroSvg.classList.remove('hidden');
+
+            const adminPrev = document.getElementById('admin-logo-preview');
+            const adminSvg = document.getElementById('admin-logo-svg');
+            if (adminPrev) adminPrev.classList.add('hidden');
+            if (adminSvg) adminSvg.classList.remove('hidden');
+
+            syncStateLocalAndCloud();
+            showToast("Reset Logo", "Logo OSIS dikembalikan ke desain vector bawaan.");
+        }
+
+        // NAVIGATION TABS SWITCHER
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`tab-${tabId}`);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-navy-800', 'text-gold-400');
+            });
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) activeNav.classList.add('bg-navy-800', 'text-gold-400');
+
+            document.getElementById('mobile-menu').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        // 3. DIREKTORI ANGGOTA RENDER & FILTER LOGIC
+        function renderMembers() {
+            const grid = document.getElementById('members-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const search = (document.getElementById('member-search')?.value || '').toLowerCase();
+            const filterJabatan = document.getElementById('filter-jabatan')?.value || '';
+            const filterDivisi = document.getElementById('filter-divisi')?.value || '';
+
+            const filtered = membersData.filter(m => {
+                const matchName = m.name.toLowerCase().includes(search);
+                const matchJabatan = !filterJabatan || m.jabatan === filterJabatan;
+                const matchDivisi = !filterDivisi || m.divisi === filterDivisi;
+                return matchName && matchJabatan && matchDivisi;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">Tidak ada anggota yang cocok dengan filter pencarian.</div>`;
+                return;
+            }
+
+            filtered.forEach(m => {
+                const avgRating = (m.ratingSum / m.ratingCount).toFixed(1);
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl overflow-hidden shadow-md border border-slate-100 hover:shadow-xl transition flex flex-col justify-between group";
+                card.innerHTML = `
+                    <div class="p-5 text-center">
+                        <div class="relative w-24 h-24 mx-auto mb-4">
+                            <img src="${m.photo}" alt="${m.name}" class="w-24 h-24 rounded-full object-cover border-4 border-navy-900 shadow-md group-hover:scale-105 transition" onerror="this.src='https://placehold.co/200x200/0a192f/ffffff?text=OSIS'">
+                            <span class="absolute bottom-0 right-0 bg-gold-500 text-navy-900 text-[10px] font-bold px-2 py-0.5 rounded-full border border-white flex items-center gap-0.5">
+                                <i data-lucide="star" class="w-3 h-3 fill-current"></i> ${avgRating}
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-lg text-navy-900">${m.name}</h3>
+                        <p class="text-xs font-semibold text-gold-600 uppercase tracking-wider">${m.jabatan}</p>
+                        <p class="text-xs text-slate-500 mt-0.5">${m.kelas} • ${m.divisi}</p>
+                        <p class="text-xs text-slate-600 mt-3 line-clamp-2 italic">"${m.desc}"</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
+                        <button onclick="openMemberDetail(${m.id})" class="flex-1 bg-navy-900 text-white font-semibold py-2 rounded-xl text-xs hover:bg-navy-800 transition">
+                            Detail Profil
+                        </button>
+                        <button onclick="openGiveRatingModal(${m.id})" class="bg-gold-500 hover:bg-gold-600 text-navy-900 font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center">
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+        }
+
+        function openMemberDetail(id) {
+            const m = membersData.find(x => x.id === id);
+            if (!m) return;
+            const avgRating = (m.ratingSum / m.ratingCount).toFixed(1);
+            const content = document.getElementById('member-detail-content');
+            content.innerHTML = `
+                <div class="text-center">
+                    <img src="${m.photo}" class="w-28 h-28 rounded-full object-cover mx-auto border-4 border-gold-400 shadow-lg mb-4" onerror="this.src='https://placehold.co/200x200/0a192f/ffffff?text=OSIS'">
+                    <h3 class="text-2xl font-black text-navy-900">${m.name}</h3>
+                    <div class="inline-block bg-navy-900 text-gold-400 text-xs px-3 py-1 rounded-full font-bold uppercase mt-1">${m.jabatan}</div>
+                    <div class="text-xs text-slate-500 mt-1">${m.kelas} — ${m.divisi}</div>
+                </div>
+                <div class="mt-6 space-y-4">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <h4 class="text-xs font-bold uppercase text-slate-500 mb-1">Tugas & Tanggung Jawab</h4>
+                        <p class="text-sm text-slate-700 leading-relaxed">${m.desc}</p>
+                    </div>
+                    <div class="flex items-center justify-between bg-gold-500/10 p-4 rounded-2xl border border-gold-500/20">
+                        <div>
+                            <div class="text-xs text-gold-700 font-bold uppercase">Rata-Rata Rating Kinerja</div>
+                            <div class="text-2xl font-black text-navy-900">${avgRating} / 5.0</div>
+                        </div>
+                        <div class="text-xs text-slate-500 font-medium">${m.ratingCount} Penilai</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modal-member-detail').classList.remove('hidden');
+        }
+
+        function closeMemberDetailModal() {
+            document.getElementById('modal-member-detail').classList.add('hidden');
+        }
+
+        // 4. RATING KINERJA LOGIC & LEADERBOARD
+        function renderRatingMembers() {
+            const grid = document.getElementById('rating-members-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            membersData.forEach(m => {
+                const avgRating = (m.ratingSum / m.ratingCount).toFixed(1);
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between";
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <img src="${m.photo}" class="w-10 h-10 rounded-full object-cover" onerror="this.src='https://placehold.co/100x100/0a192f/ffffff?text=OSIS'">
+                        <div>
+                            <div class="font-bold text-sm text-navy-900">${m.name}</div>
+                            <div class="text-[11px] text-slate-500">${m.jabatan} • ⭐ ${avgRating}</div>
+                        </div>
+                    </div>
+                    <button onclick="openGiveRatingModal(${m.id})" class="bg-navy-900 text-gold-400 font-bold text-xs px-3 py-2 rounded-xl hover:bg-navy-800 transition">
+                        Beri Rating
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const sorted = [...membersData].sort((a, b) => (b.ratingSum / b.ratingCount) - (a.ratingSum / a.ratingCount)).slice(0, 4);
+
+            sorted.forEach((m, idx) => {
+                const avgRating = (m.ratingSum / m.ratingCount).toFixed(1);
+                const badgeColors = ['bg-gold-500 text-navy-900', 'bg-slate-300 text-slate-800', 'bg-amber-700 text-white', 'bg-slate-100 text-slate-600'];
+                const rankItem = document.createElement('div');
+                rankItem.className = "flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100";
+                rankItem.innerHTML = `
+                    <div class="flex items-center space-x-4">
+                        <span class="w-7 h-7 rounded-full ${badgeColors[idx] || badgeColors[3]} font-black text-xs flex items-center justify-center shadow-sm">
+                            #${idx + 1}
+                        </span>
+                        <img src="${m.photo}" class="w-11 h-11 rounded-full object-cover" onerror="this.src='https://placehold.co/100x100/0a192f/ffffff?text=OSIS'">
+                        <div>
+                            <div class="font-bold text-navy-900 text-sm sm:text-base">${m.name}</div>
+                            <div class="text-xs text-slate-500">${m.jabatan} — ${m.divisi}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-black text-gold-600 flex items-center gap-1 justify-end">
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i> ${avgRating}
+                        </div>
+                        <div class="text-[10px] text-slate-400">${m.ratingCount} Siswa Ulas</div>
+                    </div>
+                `;
+                container.appendChild(rankItem);
+            });
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+        }
+
+        function initRatingChart() {
+            const ctx = document.getElementById('ratingChart');
+            if (!ctx) return;
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Kedisiplinan', 'Tanggung Jawab', 'Kerja Sama', 'Keaktifan', 'Komunikasi'],
+                    datasets: [{
+                        label: 'Nilai Kriteria OSIS',
+                        data: [4.8, 4.6, 4.9, 4.7, 4.5],
+                        backgroundColor: 'rgba(245, 158, 11, 0.25)',
+                        borderColor: '#f59e0b',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#0a192f'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 5,
+                            ticks: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function openGiveRatingModal(id) {
+            const m = membersData.find(x => x.id === id);
+            if (!m) return;
+            document.getElementById('rating-target-id').value = m.id;
+            document.getElementById('rating-target-name').innerText = m.name;
+            setRatingStars(5);
+            document.getElementById('modal-give-rating').classList.remove('hidden');
+        }
+
+        function closeGiveRatingModal() {
+            document.getElementById('modal-give-rating').classList.add('hidden');
+        }
+
+        function setRatingStars(starCount) {
+            currentSelectedRatingStars = starCount;
+            const stars = document.querySelectorAll('#star-rating-selector i');
+            stars.forEach((s, idx) => {
+                if (idx < starCount) {
+                    s.classList.add('text-gold-500');
+                    s.classList.remove('text-slate-300');
+                } else {
+                    s.classList.remove('text-gold-500');
+                    s.classList.add('text-slate-300');
+                }
+            });
+            const labels = ['1 / 5 - Perlu Evaluasi', '2 / 5 - Cukup', '3 / 5 - Baik', '4 / 5 - Sangat Baik', '5 / 5 - Luar Biasa & Teladan'];
+            document.getElementById('star-label').innerText = labels[starCount - 1];
+        }
+
+        function handleRatingSubmit(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('rating-target-id').value);
+            const comment = document.getElementById('rating-comment').value;
+
+            const m = membersData.find(x => x.id === id);
+            if (m) {
+                m.ratingSum += currentSelectedRatingStars;
+                m.ratingCount += 1;
+                ratingCommentsData.push({ memberId: id, comment: comment, rating: currentSelectedRatingStars });
+            }
+
+            syncStateLocalAndCloud();
+            showToast("Penilaian Berhasil", "Terima kasih telah memberikan ulasan penilaian kinerja.");
+            closeGiveRatingModal();
+            renderMembers();
+            renderRatingMembers();
+            renderLeaderboard();
+        }
+
+        // 5. RENDER BERITA REALTIME DI BERANDA
+        function renderHomeNews() {
+            const container = document.querySelector('#tab-home .grid.grid-cols-1.md\\:grid-cols-3');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (newsData.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">Belum ada berita yang diterbitkan.</div>`;
+                return;
+            }
+
+            newsData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl overflow-hidden shadow-md border border-slate-100 hover:shadow-xl transition group flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="h-48 bg-slate-200 overflow-hidden relative">
+                            <img src="${item.photo}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/0a192f/ffffff?text=OSIS+News'">
+                            <span class="absolute top-3 left-3 bg-navy-900/90 text-gold-400 text-xs px-3 py-1 rounded-full font-semibold">${item.category}</span>
+                        </div>
+                        <div class="p-6">
+                            <div class="text-xs text-slate-400 mb-2 flex items-center gap-1">
+                                <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${item.date}
+                            </div>
+                            <h3 class="font-bold text-lg text-navy-900 group-hover:text-gold-600 transition mb-2">${item.title}</h3>
+                            <p class="text-slate-600 text-sm line-clamp-2">${item.desc}</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+        }
+
+        // RENDER BERITA REALTIME DI DASHBOARD ADMIN
+        function renderNewsAdminTable() {
+            const tbody = document.getElementById('news-admin-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            newsData.forEach(n => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 flex items-center space-x-3">
+                        <img src="${n.photo}" class="w-12 h-10 rounded-lg object-cover" onerror="this.src='https://placehold.co/100x100/0a192f/ffffff?text=Berita'">
+                        <span class="font-bold text-navy-900 max-w-xs truncate">${n.title}</span>
+                    </td>
+                    <td class="p-4 text-xs font-semibold text-slate-700">${n.category}</td>
+                    <td class="p-4 text-xs text-slate-500">${n.date}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="editNews(${n.id})" class="text-blue-600 hover:text-blue-800 text-xs font-bold">Edit</button>
+                        <button onclick="deleteNews(${n.id})" class="text-red-600 hover:text-red-800 text-xs font-bold">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openNewsFormModal() {
+            tempNewsBase64 = "";
+            document.getElementById('news-form-title').innerText = "Tambah Berita / Kegiatan Beranda";
+            document.getElementById('form-news-id').value = "";
+            document.getElementById('form-news-title').value = "";
+            document.getElementById('form-news-category').value = "";
+            document.getElementById('form-news-date').value = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('form-news-desc').value = "";
+            document.getElementById('form-news-photo-file').value = "";
+            document.getElementById('news-photo-preview').classList.add('hidden');
+            document.getElementById('modal-news-form').classList.remove('hidden');
+        }
+
+        function closeNewsFormModal() {
+            document.getElementById('modal-news-form').classList.add('hidden');
+        }
+
+        function editNews(id) {
+            const n = newsData.find(x => x.id === id);
+            if (!n) return;
+            tempNewsBase64 = n.photo;
+            document.getElementById('news-form-title').innerText = "Edit Berita Beranda";
+            document.getElementById('form-news-id').value = n.id;
+            document.getElementById('form-news-title').value = n.title;
+            document.getElementById('form-news-category').value = n.category;
+            document.getElementById('form-news-date').value = n.date;
+            document.getElementById('form-news-desc').value = n.desc;
+            document.getElementById('form-news-photo-file').value = "";
+            
+            const prev = document.getElementById('news-photo-preview');
+            prev.classList.remove('hidden');
+            prev.querySelector('img').src = n.photo;
+
+            document.getElementById('modal-news-form').classList.remove('hidden');
+        }
+
+        function handleNewsFormSubmit(e) {
+            e.preventDefault();
+            const idVal = document.getElementById('form-news-id').value;
+            const title = document.getElementById('form-news-title').value;
+            const category = document.getElementById('form-news-category').value;
+            const date = document.getElementById('form-news-date').value;
+            const desc = document.getElementById('form-news-desc').value;
+            const photo = tempNewsBase64 || "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=600&q=80";
+
+            if (idVal) {
+                const n = newsData.find(x => x.id === parseInt(idVal));
+                if (n) {
+                    n.title = title;
+                    n.category = category;
+                    n.date = date;
+                    n.desc = desc;
+                    n.photo = photo;
+                }
+                showToast("Berhasil", "Berita beranda diperbarui secara real-time.");
+            } else {
+                const newId = newsData.length ? Math.max(...newsData.map(x => x.id)) + 1 : 1;
+                newsData.unshift({
+                    id: newId,
+                    title: title,
+                    category: category,
+                    date: date,
+                    desc: desc,
+                    photo: photo
+                });
+                showToast("Berhasil", "Berita baru telah diterbitkan ke Beranda.");
+            }
+
+            syncStateLocalAndCloud();
+            closeNewsFormModal();
+            renderHomeNews();
+            renderNewsAdminTable();
+        }
+
+        // FIX HAPUS BERITA
+        function deleteNews(id) {
+            const index = newsData.findIndex(x => x.id === id);
+            if (index !== -1) {
+                newsData.splice(index, 1);
+                syncStateLocalAndCloud();
+                renderHomeNews();
+                renderNewsAdminTable();
+                showToast("Dihapus", "Berita telah berhasil dihapus dari Beranda.");
+            }
+        }
+
+        // 6. SUARA SISWA (ASPIRASI & PENGADUAN) SUBMIT
+        function handleAspirasiSubmit(e) {
+            e.preventDefault();
+            const cat = document.getElementById('asp-category').value;
+            const anonymity = document.getElementById('asp-anonymity').value;
+            const title = document.getElementById('asp-title').value;
+            const msg = document.getElementById('asp-message').value;
+
+            let pelapor = "Anonim (Rahasia)";
+            if (anonymity === 'identitas') {
+                const name = document.getElementById('asp-name').value || "Siswa SMAN 1";
+                const kelas = document.getElementById('asp-class').value || "-";
+                pelapor = `${name} (${kelas})`;
+            }
+
+            const newId = `PGD-${Math.floor(1000 + Math.random() * 9000)}`;
+            const today = new Date().toISOString().replace('T', ' ').substring(0, 16);
+
+            complaintsData.unshift({
+                id: newId,
+                date: today,
+                title: title,
+                category: cat,
+                pelapor: pelapor,
+                message: msg,
+                status: "Baru",
+                notes: ""
+            });
+
+            syncStateLocalAndCloud();
+            showToast("Pengaduan Terkirim", `Kode Pengaduan Anda: ${newId}. Laporan tersimpan di database rahasia pengurus.`);
+            document.getElementById('aspirasi-form').reset();
+            toggleIdentityFields();
+            updateStatsCount();
+            renderComplaintsTable();
+        }
+
+        function switchAdminTab(subTab) {
+            document.getElementById('admin-tab-complaints').classList.add('hidden');
+            document.getElementById('admin-tab-members-mgmt').classList.add('hidden');
+            document.getElementById('admin-tab-divisions-mgmt').classList.add('hidden');
+            document.getElementById('admin-tab-news-mgmt').classList.add('hidden');
+            document.getElementById('admin-tab-users-mgmt').classList.add('hidden');
+            document.getElementById('admin-tab-maintenance').classList.add('hidden');
+            document.getElementById(`admin-tab-${subTab}`).classList.remove('hidden');
+            
+            if (subTab === 'divisions-mgmt') renderDivisionsAdminTable();
+            if (subTab === 'news-mgmt') renderNewsAdminTable();
+            if (subTab === 'users-mgmt') renderUsersAdminTable();
+        }
+
+        // ================= FITUR PEMELIHARAAN MANDIRI (SELF-MAINTENANCE LOGIC) =================
+        function addLogConsole(msg) {
+            const consoleEl = document.getElementById('maintenance-console-log');
+            if (!consoleEl) return;
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="text-gold-400">[${time}]</span> ${msg}`;
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function clearMaintenanceLog() {
+            const consoleEl = document.getElementById('maintenance-console-log');
+            if (consoleEl) consoleEl.innerHTML = '<div>[SYSTEM] Log dibersihkan.</div>';
+        }
+
+        function runAutoRepair() {
+            addLogConsole("Memulai analisis pemeriksaan integritas data internal...");
+            let repairedCount = 0;
+
+            // 1. Periksa Integritas Anggota
+            membersData.forEach(m => {
+                if (!m.ratingSum || isNaN(m.ratingSum)) { m.ratingSum = 25; repairedCount++; }
+                if (!m.ratingCount || isNaN(m.ratingCount) || m.ratingCount === 0) { m.ratingCount = 5; repairedCount++; }
+                if (!m.kelas) { m.kelas = "XI MIPA 1"; repairedCount++; }
+                if (!m.divisi) { m.divisi = "BPH"; repairedCount++; }
+            });
+
+            // 2. Periksa Integritas Pengaduan
+            complaintsData.forEach(c => {
+                if (!c.status) { c.status = "Baru"; repairedCount++; }
+                if (!c.pelapor) { c.pelapor = "Anonim"; repairedCount++; }
+            });
+
+            addLogConsole(`Pemeriksaan selesai. Berhasil memperbaiki ${repairedCount} entitas data yang bermasalah.`);
+            showToast("Auto-Repair Selesai", `Sistem telah memperbaiki ${repairedCount} item data secara otomatis.`);
+            renderMembers();
+            renderMembersAdminTable();
+            renderComplaintsTable();
+        }
+
+        function runAssetRepair() {
+            addLogConsole("Memeriksa tautan gambar broken/rusak pada sistem...");
+            let fixedAssets = 0;
+
+            membersData.forEach(m => {
+                if (!m.photo || m.photo.includes("error") || m.photo.trim() === "") {
+                    m.photo = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
+                    fixedAssets++;
+                }
+            });
+
+            newsData.forEach(n => {
+                if (!n.photo || n.photo.trim() === "") {
+                    n.photo = "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=600&q=80";
+                    fixedAssets++;
+                }
+            });
+
+            addLogConsole(`Pemulihan aset selesai. ${fixedAssets} gambar telah diperbarui ke fallback image.`);
+            showToast("Aset Dipulihkan", `${fixedAssets} gambar yang rusak telah berhasil dipulihkan.`);
+            renderMembers();
+            renderHomeNews();
+        }
+
+        function runMasterReset() {
+            if (!confirm("Apakah Anda yakin ingin mengembalikan seluruh data website ke pengaturan standar pabrik?")) return;
+            
+            addLogConsole("Memulai Reset Master Database...");
+            
+            localStorage.clear();
+
+            // Re-assign data awal
+            membersData = [...DEFAULT_MEMBERS];
+            newsData = [...DEFAULT_NEWS];
+            pembinaData = { ...DEFAULT_PEMBINA };
+            divisionsData = [...DEFAULT_DIVISIONS];
+            complaintsData = [...DEFAULT_COMPLAINTS];
+            adminUsersData = [...DEFAULT_USERS];
+
+            resetLogoToDefault();
+            syncStateLocalAndCloud();
+            renderMembers();
+            renderHomeNews();
+            renderMembersAdminTable();
+            renderComplaintsTable();
+            updateStatsCount();
+
+            addLogConsole("Master Reset Berhasil! Seluruh komponen website kembali 100% normal.");
+            showToast("Reset Berhasil", "Sistem website OSIS telah berhasil dikembalikan ke standar awal.");
+        }
+
+        // MANAGEMENT PEMBINA OSIS & DIVISI
+        function handleSavePembina(e) {
+            e.preventDefault();
+            pembinaData.name = document.getElementById('pembina-name-input').value;
+            pembinaData.nip = document.getElementById('pembina-nip-input').value;
+            syncStateLocalAndCloud();
+            updatePembinaDisplay();
+            showToast("Berhasil", "Data Pembina OSIS telah diperbarui secara real-time.");
+        }
+
+        function handleDivisionFormSubmit(e) {
+            e.preventDefault();
+            const idVal = document.getElementById('form-division-id').value;
+            const name = document.getElementById('form-division-name').value;
+            const desc = document.getElementById('form-division-desc').value;
+
+            if (idVal) {
+                const d = divisionsData.find(x => x.id === parseInt(idVal));
+                if (d) {
+                    d.name = name;
+                    d.desc = desc;
+                }
+                showToast("Berhasil", "Data divisi diperbarui.");
+            } else {
+                const newId = divisionsData.length ? Math.max(...divisionsData.map(x => x.id)) + 1 : 1;
+                divisionsData.push({ id: newId, name, desc });
+                showToast("Berhasil", "Divisi baru ditambahkan.");
+            }
+
+            syncStateLocalAndCloud();
+            closeDivisionFormModal();
+            updateDivisionOptions();
+            renderDivisionsAdminTable();
+        }
+
+        function deleteDivision(id) {
+            const index = divisionsData.findIndex(x => x.id === id);
+            if (index !== -1) {
+                divisionsData.splice(index, 1);
+                syncStateLocalAndCloud();
+                updateDivisionOptions();
+                renderDivisionsAdminTable();
+                showToast("Dihapus", "Divisi telah dihapus.");
+            }
+        }
+
+        // 8. USER / AKUN PENGURUS MANAGEMENT (REAL-TIME PASSWORDS)
+        function handleUserFormSubmit(e) {
+            e.preventDefault();
+            const idVal = document.getElementById('form-user-id').value;
+            const username = document.getElementById('form-user-name').value.trim();
+            const fullname = document.getElementById('form-user-fullname').value;
+            const pass = document.getElementById('form-user-pass').value;
+
+            if (idVal) {
+                const u = adminUsersData.find(x => x.id === parseInt(idVal));
+                if (u) {
+                    u.username = username;
+                    u.fullname = fullname;
+                    u.pass = pass;
+                }
+                showToast("Diperbarui", "Password/Akun pengurus berhasil diubah.");
+            } else {
+                const newId = adminUsersData.length ? Math.max(...adminUsersData.map(x => x.id)) + 1 : 1;
+                adminUsersData.push({ id: newId, username, fullname, pass });
+                showToast("Berhasil", "Akun pengurus baru ditambahkan.");
+            }
+
+            syncStateLocalAndCloud();
+            closeUserFormModal();
+            renderUsersAdminTable();
+        }
+
+        function deleteUser(id) {
+            const index = adminUsersData.findIndex(x => x.id === id);
+            if (index !== -1) {
+                adminUsersData.splice(index, 1);
+                syncStateLocalAndCloud();
+                renderUsersAdminTable();
+                showToast("Dihapus", "Akun pengurus telah dihapus.");
+            }
+        }
+
+        function saveComplaintUpdate(id) {
+            const c = complaintsData.find(x => x.id === id);
+            if (!c) return;
+
+            c.status = document.getElementById('update-comp-status').value;
+            c.notes = document.getElementById('update-comp-notes').value;
+
+            syncStateLocalAndCloud();
+            showToast("Perubahan Disimpan", `Status pengaduan ${id} diperbarui menjadi ${c.status}`);
+            closeComplaintDetailModal();
+            renderComplaintsTable();
+        }
+
+        // 10. MEMBER CRUD MANAGEMENT (ADMIN VIEW & UPLOAD FILE)
+        function handleMemberFormSubmit(e) {
+            e.preventDefault();
+            const idVal = document.getElementById('form-member-id').value;
+            const name = document.getElementById('form-member-name').value;
+            const jabatan = document.getElementById('form-member-jabatan').value;
+            const kelas = document.getElementById('form-member-kelas').value;
+            const divisi = document.getElementById('form-member-divisi').value;
+            const desc = document.getElementById('form-member-desc').value;
+            const photo = tempMemberBase64 || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
+
+            if (idVal) {
+                const m = membersData.find(x => x.id === parseInt(idVal));
+                if (m) {
+                    m.name = name;
+                    m.jabatan = jabatan;
+                    m.kelas = kelas;
+                    m.divisi = divisi;
+                    m.desc = desc;
+                    m.photo = photo;
+                }
+                showToast("Berhasil", "Data anggota diperbarui.");
+            } else {
+                const newId = membersData.length ? Math.max(...membersData.map(x => x.id)) + 1 : 1;
+                membersData.push({
+                    id: newId,
+                    name: name,
+                    jabatan: jabatan,
+                    kelas: kelas,
+                    divisi: divisi,
+                    desc: desc,
+                    ratingSum: 25,
+                    ratingCount: 5,
+                    photo: photo
+                });
+                showToast("Berhasil", "Anggota OSIS baru ditambahkan.");
+            }
+
+            syncStateLocalAndCloud();
+            closeMemberFormModal();
+            renderMembers();
+            renderMembersAdminTable();
+            renderRatingMembers();
+            updateStatsCount();
+        }
+
+        function deleteMember(id) {
+            const index = membersData.findIndex(x => x.id === id);
+            if (index !== -1) {
+                membersData.splice(index, 1);
+                syncStateLocalAndCloud();
+                renderMembers();
+                renderMembersAdminTable();
+                renderRatingMembers();
+                updateStatsCount();
+                showToast("Dihapus", "Data anggota telah dihapus.");
+            }
+        }
+
+        // 11. UTILITY FUNCTIONS
+        function updateStatsCount() {
+            const membersEl = document.getElementById('stat-members-count');
+            const divEl = document.getElementById('stat-divisions-count');
+            const aspEl = document.getElementById('stat-aspirasi-count');
+
+            if (membersEl) membersEl.innerText = membersData.length;
+            if (divEl) divEl.innerText = divisionsData.length;
+            if (aspEl) aspEl.innerText = complaintsData.length;
+        }
+
+        function showToast(title, message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-navy-900 text-white border-gold-500' : 'bg-red-900 text-white border-red-500';
+            toast.className = `${bgClass} border-l-4 p-4 rounded-xl shadow-2xl transition duration-300 transform translate-x-full flex items-start justify-between gap-3`;
+            
+            toast.innerHTML = `
+                <div>
+                    <div class="font-bold text-xs uppercase tracking-wider text-gold-400">${title}</div>
+                    <div class="text-xs text-slate-200 mt-0.5">${message}</div>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+  </html>
