@@ -43,6 +43,9 @@
             { id: 1, username: "admin", fullname: "Super Admin OSIS", pass: "123456" }
         ];
 
+        // FIREBASE REALTIME DATABASE REST ENDPOINT URL
+        const FIREBASE_DB_URL = "https://osis-smansap-default-rtdb.asia-southeast1.firebasedatabase.app/systemState.json";
+
         // Global States Initialization
         window.customLogoBase64 = localStorage.getItem('osis_custom_logo') || DEFAULT_LOGO;
         window.newsData = JSON.parse(localStorage.getItem('osis_news_data')) || DEFAULT_NEWS;
@@ -52,7 +55,66 @@
         window.complaintsData = JSON.parse(localStorage.getItem('osis_complaints_data')) || DEFAULT_COMPLAINTS;
         window.adminUsersData = JSON.parse(localStorage.getItem('osis_admin_users')) || DEFAULT_USERS;
 
-        // Global saveAllStateToStorage Defined BEFORE Firebase Module Loads
+        // PUSH UPDATED STATE DIRECTLY TO FIREBASE REALTIME CLOUD DATABASE
+        window.saveStateToCloud = async function() {
+            const payload = {
+                customLogoBase64: window.customLogoBase64 || "",
+                newsData: window.newsData || [],
+                pembinaData: window.pembinaData || {},
+                divisionsData: window.divisionsData || [],
+                membersData: window.membersData || [],
+                complaintsData: window.complaintsData || [],
+                adminUsersData: window.adminUsersData || [],
+                lastUpdated: new Date().toISOString()
+            };
+
+            try {
+                await fetch(FIREBASE_DB_URL, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                console.log("Data successfully synced to Firebase Realtime Cloud Server!");
+            } catch (err) {
+                console.warn("Failed to push data to Firebase Realtime Database:", err);
+            }
+        };
+
+        // PULL LATEST STATE FROM FIREBASE REALTIME DATABASE ON STARTUP AND REALTIME POLLING
+        window.fetchStateFromCloud = async function() {
+            try {
+                const res = await fetch(FIREBASE_DB_URL);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data) {
+                        if (data.customLogoBase64 !== undefined) window.customLogoBase64 = data.customLogoBase64;
+                        if (data.newsData && data.newsData.length > 0) window.newsData = data.newsData;
+                        if (data.pembinaData && data.pembinaData.name) window.pembinaData = data.pembinaData;
+                        if (data.divisionsData && data.divisionsData.length > 0) window.divisionsData = data.divisionsData;
+                        if (data.membersData && data.membersData.length > 0) window.membersData = data.membersData;
+                        if (data.complaintsData) window.complaintsData = data.complaintsData;
+                        if (data.adminUsersData && data.adminUsersData.length > 0) window.adminUsersData = data.adminUsersData;
+
+                        // Save local cache backup
+                        localStorage.setItem('osis_custom_logo', window.customLogoBase64 || "");
+                        localStorage.setItem('osis_news_data', JSON.stringify(window.newsData || []));
+                        localStorage.setItem('osis_pembina_data', JSON.stringify(window.pembinaData || {}));
+                        localStorage.setItem('osis_divisions_data', JSON.stringify(window.divisionsData || []));
+                        localStorage.setItem('osis_members_data', JSON.stringify(window.membersData || []));
+                        localStorage.setItem('osis_complaints_data', JSON.stringify(window.complaintsData || []));
+                        localStorage.setItem('osis_admin_users', JSON.stringify(window.adminUsersData || []));
+
+                        if (typeof window.syncAllCloudUI === 'function') {
+                            window.syncAllCloudUI();
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Offline fallback mode:", e);
+            }
+        };
+
+        // Global Save Handler
         window.saveAllStateToStorage = function() {
             localStorage.setItem('osis_custom_logo', window.customLogoBase64 || "");
             localStorage.setItem('osis_news_data', JSON.stringify(window.newsData || []));
@@ -66,6 +128,14 @@
                 window.saveStateToCloud();
             }
         };
+
+        // Fetch Cloud Data instantly on init
+        window.fetchStateFromCloud();
+
+        // Auto poll Realtime Database every 5 seconds for cross-device updates
+        setInterval(() => {
+            window.fetchStateFromCloud();
+        }, 5000);
     </script>
 
     <!-- Firebase SDK Integration for Real-time Cloud Sync -->
@@ -74,18 +144,19 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Dynamic Safe Fallback App ID for Firestore Public Syncing
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'osis-sman1-parlilitan-v1';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : {
-                apiKey: "AIzaSyDemoConfigKeyForOSISSman1Parlilitan",
-                authDomain: "osis-sman1-parlilitan.firebaseapp.com",
-                projectId: "osis-sman1-parlilitan",
-                storageBucket: "osis-sman1-parlilitan.appspot.com",
-                messagingSenderId: "1234567890",
-                appId: "1:1234567890:web:osisdemo"
-            };
+        // Firebase Configuration From User Project
+        const firebaseConfig = {
+            apiKey: "AIzaSyALgCJyvzITuSJeXmcBClPliIGTn9yN84I",
+            authDomain: "osis-smansap.firebaseapp.com",
+            databaseURL: "https://osis-smansap-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "osis-smansap",
+            storageBucket: "osis-smansap.firebasestorage.app",
+            messagingSenderId: "855276008457",
+            appId: "1:855276008457:web:5ea1077f1c3285a43ab4d8",
+            measurementId: "G-1JT1DE5SYG"
+        };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'osis-smansap-main';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -103,7 +174,7 @@
                     await signInAnonymously(auth);
                 }
             } catch (err) {
-                console.warn("Cloud Auth Active:", err);
+                console.warn("Cloud Auth Status:", err);
             }
 
             // Real-time listener: triggers whenever ANY admin updates data on ANY device
@@ -1976,6 +2047,13 @@
         function initRatingChart() {
             const ctx = document.getElementById('ratingChart');
             if (!ctx) return;
+            
+            // Pengecekan keamanan jika library Chart.js belum selesai dimuat dari CDN
+            if (typeof Chart === 'undefined') {
+                console.warn("Chart.js belum dimuat. Menunggu pustaka siap...");
+                return;
+            }
+
             new Chart(ctx, {
                 type: 'radar',
                 data: {
@@ -2542,4 +2620,4 @@
         }
     </script>
 </body>
-                            </html>
+    </html>
